@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="theme-color" content="#0a101b" />
+  <title>AION | Live Trading Monitor</title>
+  <link rel="icon" type="image/png" href="/static/aion-logo.png" />
+  <link rel="apple-touch-icon" href="/static/aion-logo.png" />
+  <style>
+    :root{--bg:#080e19;--panel:#101a28;--panel2:#142031;--border:#263449;--muted:#96a5b9;--white:#ebf2fa;--cyan:#3cd9c0;--red:#fa797e;--gold:#ebc179;--blue:#7aa8f8;--shadow:0 16px 44px rgba(0,0,0,.18)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--white);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+    body::before{content:"";position:fixed;z-index:-1;inset:0;background:radial-gradient(ellipse 70% 50% at 65% -16%,rgba(42,141,158,.19),transparent 76%),radial-gradient(ellipse 55% 45% at 10% 90%,rgba(53,90,152,.1),transparent 72%)}
+    .app{min-height:100vh;display:grid;grid-template-columns:242px minmax(0,1fr)}.sidebar{border-right:1px solid var(--border);background:#0a1321;padding:30px 18px;display:flex;flex-direction:column;gap:25px;position:sticky;top:0;height:100vh}
+    .brand{display:flex;align-items:center;gap:13px;padding:0 10px}.mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(145deg,#154b52,#1d2d44);border:1px solid #397b78;color:#71e4d0;font-weight:800;font-size:20px;box-shadow:0 0 25px #2bc8a822}.brandtitle{font-size:20px;letter-spacing:4px;font-weight:750}.brandsub{font-size:10px;color:#96a7bb;text-transform:uppercase;letter-spacing:1.7px}
+    .navcap{color:#667f97;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:0 14px}.nav{display:grid;gap:5px}.nav button{font:inherit;color:var(--muted);background:transparent;border:0;text-align:left;padding:12px 13px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:11px}.nav button.active{background:#17313a;color:#84e7d9}.nav button:hover{background:#192536;color:white}.navsvg{font-size:18px;width:20px;text-align:center}
+    .sidebar-foot{margin-top:auto;padding:14px;border:1px solid var(--border);border-radius:12px;background:#101f2e}.tiny{font-size:11px;color:var(--muted)}.secure{color:var(--cyan);font-size:12px;font-weight:650}
+    .main{padding:35px clamp(18px,3.3vw,55px) 45px;max-width:1500px;width:100%;margin:0 auto;min-width:0}.topline{display:flex;align-items:center;justify-content:space-between;gap:14px}.eyebrow{text-transform:uppercase;letter-spacing:2.5px;color:var(--cyan);font-size:11px;font-weight:720}h1{font-size:clamp(27px,3.3vw,38px);line-height:1.2;font-weight:670;letter-spacing:-.9px;margin:9px 0 5px}.subtitle{color:var(--muted);margin:0}.righttop{display:flex;align-items:center;gap:12px}.clock{font-size:12px;color:var(--muted)}.pill{border:1px solid #3c485c;padding:8px 12px;border-radius:99px;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:700;white-space:nowrap}.pill.ok{color:var(--cyan);border-color:#235e55;background:#15342d}.pill.off{color:var(--red);border-color:#6b343c;background:#361e2a}.pill.warn{color:var(--gold);background:#2d281c;border-color:#645536}
+    .notice{margin:26px 0 25px;padding:12px 16px;background:#101b28;border:1px solid #34505a;border-left:3px solid var(--cyan);border-radius:8px;display:flex;gap:12px;align-items:center;color:#b6c3d4;font-size:12px}
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.metric{min-height:130px;background:linear-gradient(155deg,#142131,#0d1725);border:1px solid var(--border);padding:19px;border-radius:15px;box-shadow:var(--shadow)}.metlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.15px;font-weight:650}.metvalue{font-size:clamp(21px,2.5vw,33px);letter-spacing:-.5px;line-height:1.1;font-weight:680;margin:17px 0 7px}.metfoot{font-size:11px;color:#758ba0}.mint{color:var(--cyan)}.amber{color:var(--gold)}
+    .section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin:28px 0 12px}.section-head h2{font-size:17px;margin:0;font-weight:630}.section-head p{font-size:11px;color:var(--muted);margin:3px 0 0}.panel{background:linear-gradient(150deg,#111d2c,#0d1725);border:1px solid var(--border);border-radius:15px;min-width:0;overflow:hidden;box-shadow:var(--shadow)}.panelbody{padding:20px}.twocol{display:grid;grid-template-columns:1.36fr 1fr;gap:15px}.state-grid{display:grid;gap:12px}.state-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);gap:12px}.state-row:last-child{border-bottom:0}.state-row span:first-child{color:var(--muted)}.state-row strong{font-weight:680;text-align:right}.good{color:var(--cyan)}.bad{color:var(--red)}
+    .chartwrap{height:210px;padding:4px 0}.chartnote{color:var(--muted);font-size:11px}.bar-chart{display:flex;align-items:flex-end;height:170px;gap:9px;border-bottom:1px solid var(--border);padding:2px 10px 0}.chart-day{flex:1;height:100%;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:4px;max-width:110px}.chart-bar{width:36px;max-width:100%;border-radius:5px 5px 0 0;min-height:2px;background:linear-gradient(to top,#258a87,#52e1c8);box-shadow:0 0 13px #2fc7bc22}.chart-label{color:var(--muted);font-size:10px;height:15px;margin-bottom:-19px}
+    .toolbar{padding:14px 18px;display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid var(--border)}.toolbar strong{font-weight:650}.chip{font-size:11px;border:1px solid var(--border);padding:5px 10px;border-radius:8px;color:var(--muted)}table{border-collapse:collapse;width:100%;white-space:nowrap}th{color:#7e90a7;font-size:10px;font-weight:650;letter-spacing:1px;text-align:left;text-transform:uppercase;background:#101d2c;padding:14px 19px}td{font-size:12px;padding:14px 19px;border-top:1px solid #203045;color:#ced9e5}tr:hover td{background:#172234}.tag{display:inline-block;font-weight:700;font-size:10px;letter-spacing:.3px;padding:5px 9px;border-radius:6px}.tag.call{background:#173b35;color:#72e0c2}.tag.put{background:#3b222b;color:#ffa1a8}.tag.exit{background:#2b3446;color:#b8c7e3}.tag.ignored{background:#293244;color:#a6b5c7}.tag.logged{background:#173b35;color:#80e5ce}.scroll{overflow-x:auto}.empty{padding:39px 16px;text-align:center;color:var(--muted);font-size:13px}.empty .symbol{font-size:25px;margin-bottom:9px}.subtle{font-size:11px;color:var(--muted)}.section{display:none}.section.active{display:block}.details{margin-top:24px;display:flex;gap:15px;flex-wrap:wrap;color:#8697ab;font-size:11px}.details span{border:1px solid #243349;border-radius:7px;padding:7px 10px}.refresh{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:9px 11px;cursor:pointer}.refresh:hover{color:white;border-color:#456b6c}.disclaimer{color:#7f90a3;font-size:11px;margin-top:24px}
+    .mobilenav{display:none}.mobiletop{display:none}
+    /* Official AION Quant Labs emblem, gold on deep navy. */
+    .mark.brand-logo{display:block;width:48px;height:48px;object-fit:contain;flex-shrink:0;background:transparent;border:none;border-radius:50%;box-shadow:0 0 16px rgba(232,186,104,.12)}
+    .mobiletop .mark.brand-logo{width:36px;height:36px;border-radius:50%;box-shadow:none}
+
+    @media(max-width:1050px){.app{grid-template-columns:195px 1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.twocol{grid-template-columns:1fr}}
+    @media(max-width:730px){.app{display:block;padding-bottom:68px}.sidebar{display:none}.main{padding:22px 15px 35px}.mobiletop{display:flex;align-items:center;gap:10px;padding-bottom:9px}.mobiletop .mark{width:30px;height:30px;font-size:15px;border-radius:8px}.mobiletop .brandtitle{font-size:16px}.righttop .clock{display:none}.topline{align-items:start}.metrics{gap:9px}.metric{min-height:115px;padding:14px}.metvalue{font-size:25px}.notice{margin:17px 0}.section-head{margin-top:22px}.toolbar{padding:12px}.mobilenav{position:fixed;bottom:0;left:0;right:0;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);background:#0d1827;border-top:1px solid var(--border);padding:8px 4px calc(6px + env(safe-area-inset-bottom))}.mobilenav button{background:transparent;color:#889bb2;border:none;font:inherit;font-size:10px;display:grid;gap:3px;justify-items:center}.mobilenav button b{font-size:19px;font-weight:400}.mobilenav button.active{color:var(--cyan)}.scroll{margin-bottom:5px}.panelbody{padding:16px}}
+    @media(prefers-reduced-motion:no-preference){.metric,.panel{transition:border-color .2s}.metric:hover,.panel:hover{border-color:#345363}}
+    /* AION Research Suite */
+    .research-toolbar{padding:20px;display:grid;gap:8px}.research-toolbar label{font-size:11px;color:var(--muted);letter-spacing:.6px;font-weight:700;text-transform:uppercase}
+    .research-controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.research-controls input,.research-controls select{flex:1;min-width:170px;background:#091523;color:#e5f2ff;border:1px solid #324a5c;border-radius:9px;padding:11px 13px;font:inherit;outline:none}.research-controls input:focus,.research-controls select:focus{border-color:var(--gold)}
+    .research-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #bc9655;background:#c6a367;color:#081321;border-radius:9px;padding:11px 15px;font:inherit;font-weight:750;cursor:pointer;text-decoration:none}.research-button:hover{filter:brightness(1.08)}.research-button:disabled{opacity:.5;cursor:default}.research-button.secondary{background:#1e3043;border-color:#40566a;color:#dbebfa}
+    .research-status{font-size:12px;color:#9fb4c9;min-height:19px}.research-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.research-card-grid .metvalue{font-size:20px;overflow-wrap:anywhere;margin:12px 0 9px}.research-row{display:flex;justify-content:space-between;align-items:center;gap:12px}.research-summary{display:flex;flex-wrap:wrap;gap:12px;margin-top:15px}.research-summary .metric{min-height:96px;flex:1;min-width:150px}.research-summary .metvalue{margin:10px 0 0;font-size:25px}
+    #scan-rows tr{cursor:pointer}#scan-rows tr:hover td{background:#203146}.research-chart{height:240px;display:flex;align-items:center;justify-content:center;color:#91a7b9;margin-top:12px}.research-chart svg{width:100%;height:230px;overflow:visible}.news-list{display:grid}.news-item{display:flex;gap:15px;justify-content:space-between;padding:15px 19px;border-bottom:1px solid var(--border);min-width:0}.news-item:last-child{border-bottom:0}.news-item a{color:#e1edf8;text-decoration:none;font-size:13px;font-weight:610;line-height:1.5}.news-item a:hover{color:var(--gold)}.news-meta{font-size:11px;color:var(--muted);margin-top:5px}.sentiment-tag{white-space:nowrap;font-size:11px;font-weight:650;color:var(--gold)}.sentiment-tag.Positive{color:#6bddbe}.sentiment-tag.Negative{color:#fc888c}.sentiment-tag.Neutral{color:#bccbdb}.nav .research-nav{color:#d5bf91}
+    @media(max-width:900px){.research-card-grid{grid-template-columns:1fr}.research-summary .metric{min-width:130px}}
+    @media(max-width:730px){.mobilenav{display:flex;overflow-x:auto;gap:0;justify-content:space-between;scrollbar-width:none}.mobilenav button{min-width:74px;flex:1;white-space:nowrap;padding:0 3px}.research-controls input{min-width:100px}.research-controls select{min-width:120px}.research-toolbar{padding:14px}.research-card-grid{grid-template-columns:1fr}.research-summary .metric{flex:1 1 40%}.research-chart{height:205px}.research-chart svg{height:185px}}
+
+    /* Integrated AION original backtesting engine: read/write research only. */
+    .lab-explain{border-color:#715e3a;background:linear-gradient(140deg,#192538,#111927)}.lab-explain p{margin-top:8px;font-size:12px;line-height:1.7}
+    .lab-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:12px}.lab-grid label{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#b9c7d8;font-weight:650}
+    .lab-grid input,.lab-grid select{width:100%;min-width:0;padding:10px 12px;background:#0a1523;color:#eaf2fc;border:1px solid #34485d;border-radius:9px;font:inherit;min-height:42px}
+    .lab-grid input:focus,.lab-grid select:focus{outline:1px solid var(--gold)}.lab-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:14px 0 9px}.lab-actions a{font-size:12px;color:var(--gold)}
+    .lab-check-row{display:flex;gap:15px;flex-wrap:wrap;padding:8px 0}.lab-check-row label{display:flex;align-items:center;gap:6px;font-size:11px;color:#b7c5d7}.lab-check-row input{accent-color:#c6a367;width:17px;height:17px}
+    .lab-message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:11px;color:#acc0d3;background:#0b1625;border:1px solid #314254;border-radius:8px;padding:11px 13px;margin-top:12px}.lab-message.error{color:#ffafb8;border-color:#9a5963}.lab-message.ok{color:#9ce5ce;border-color:#3e7967}
+    .lab-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}.lab-metrics .metric{min-height:90px;padding:12px}.lab-metrics .metvalue{font-size:19px;margin:10px 0 5px}.lab-equity{width:100%;min-height:210px;padding:7px;border:1px solid var(--border);border-radius:12px;background:#091524;display:flex;align-items:center;justify-content:center;overflow:hidden}.lab-equity svg{width:100%;max-height:240px}.lab-trades-scroll{max-height:350px;overflow:auto;margin-top:14px}.lab-advanced{margin-top:23px;background:#101c2b;border:1px solid #345066;border-radius:12px;padding:16px}.lab-advanced summary{cursor:pointer;font-size:13px;color:#e7c78d;font-weight:700}.lab-advanced iframe{width:100%;height:900px;border:1px solid #354c61;border-radius:12px;background:#080d16;margin-top:12px}
+    @media(max-width:920px){.lab-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:600px){.lab-grid{grid-template-columns:1fr}.lab-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-actions .research-button{flex:1}.lab-advanced iframe{height:900px}}
+
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><img class="mark brand-logo" src="/static/aion-logo.png" alt="AION Quant Labs logo" width="48" height="48" /><div><div class="brandtitle">AION</div><div class="brandsub">Quant Labs</div></div></div>
+    <div class="navcap">Workspace</div>
+    <div class="nav">
+      <button data-section="overview" class="active"><span class="navsvg">◫</span> Overview</button>
+      <button data-section="signals"><span class="navsvg">⌁</span> KAIROS Signals</button>
+      <button data-section="executions"><span class="navsvg">⇄</span> Options Executions</button>
+      <button data-section="screener" class="research-nav"><span class="navsvg">⌕</span> Stock Screener</button>
+      <button data-section="sentiment" class="research-nav"><span class="navsvg">☷</span> News & Sentiment</button>
+      <button data-section="regimes" class="research-nav"><span class="navsvg">◈</span> Market Regimes</button>
+      <button data-section="backtests" class="research-nav"><span class="navsvg">▤</span> Backtesting</button>
+      <button data-section="system"><span class="navsvg">⚙</span> System Health</button>
+    </div>
+    <div class="sidebar-foot"><div class="secure">● PRIVATE MONITOR + RESEARCH</div><div class="tiny" style="margin-top:8px">Backtests can be run and imported here. No brokerage order controls or credentials are exposed.</div></div>
+  </aside>
+  <main class="main">
+    <div class="mobiletop"><img class="mark brand-logo" src="/static/aion-logo.png" alt="AION Quant Labs logo" width="36" height="36" /><div class="brandtitle">AION <span style="font-size:11px;letter-spacing:1px;color:#87a0b3">QUANT LABS</span></div></div>
+    <div class="topline"><div><div class="eyebrow">Live Operations · SPY / KAIROS V5</div><h1>Trading Monitor</h1><p class="subtitle">Signals, execution records and system status in one view.</p></div><div class="righttop"><div id="clock" class="clock">--</div><span id="connection-pill" class="pill warn">Connecting</span><button class="refresh" id="refresh" title="Refresh">↻</button></div></div>
+    <div class="notice"><span style="font-size:18px">ⓘ</span><span id="notice">Signals are not brokerage executions. No live order fills have been connected yet.</span></div>
+    <div id="overview" class="section active">
+      <div class="metrics">
+        <div class="metric"><div class="metlabel">Signal intents</div><div class="metvalue" id="signals-count">—</div><div class="metfoot">AION V5 recorded events</div></div>
+        <div class="metric"><div class="metlabel">Current intent</div><div class="metvalue mint" id="current-intent">—</div><div class="metfoot">Not a brokerage position</div></div>
+        <div class="metric"><div class="metlabel">Confirmed fills</div><div class="metvalue" id="fill-count">—</div><div class="metfoot">Paper + live execution ledger</div></div>
+        <div class="metric"><div class="metlabel">Realized P&L</div><div class="metvalue" id="pnl">—</div><div class="metfoot" id="pnl-foot">Not available until confirmed fills</div></div>
+      </div>
+      <div class="twocol">
+        <div><div class="section-head"><div><h2>KAIROS activity</h2><p>Signal events by day · most recent 7 days</p></div></div><div class="panel"><div class="panelbody"><div class="chartwrap"><div id="activity-chart" class="bar-chart"></div></div><div class="chartnote">Signal counts include logged, ignored and blocked events. They are not trades.</div></div></div></div>
+        <div><div class="section-head"><div><h2>Execution status</h2><p>Current AION pipeline</p></div></div><div class="panel"><div class="panelbody state-grid"><div class="state-row"><span>KAIROS receiver</span><strong id="receiver-state">—</strong></div><div class="state-row"><span>Strategy</span><strong>KAIROS V5 / SPY</strong></div><div class="state-row"><span>Execution mode</span><strong id="execution-mode">—</strong></div><div class="state-row"><span>Broker order routing</span><strong id="broker-routing">—</strong></div><div class="state-row"><span>Paper positions (contracts)</span><strong id="paper-open">—</strong></div><div class="state-row"><span>Live positions (ledger only)</span><strong id="live-open">—</strong></div></div></div></div>
+      </div>
+      <div class="section-head"><div><h2>Recent KAIROS alerts</h2><p>Latest signals from AION server on port 8001</p></div></div>
+      <div class="panel" id="recent-panel"><div class="scroll"><table><thead><tr><th>Received (ET)</th><th>Direction</th><th>Result</th><th>Intent after signal</th></tr></thead><tbody id="recent-rows"></tbody></table></div><div id="recent-empty" class="empty" hidden>No signals yet. Waiting for KAIROS V5 alerts.</div></div>
+    </div>
+    <div id="signals" class="section"><div class="section-head"><div><h2>TradingView signal log</h2><p>Includes tests and ignored repeats. Does not imply order placement.</p></div><span id="signals-total" class="chip">— events</span></div><div class="panel"><div class="scroll"><table><thead><tr><th>Received (ET)</th><th>Strategy</th><th>Symbol</th><th>Signal</th><th>Processing result</th><th>Intent</th></tr></thead><tbody id="signal-rows"></tbody></table></div><div id="signals-empty" class="empty" hidden>No signals available.</div></div></div>
+    <div id="executions" class="section"><div class="section-head"><div><h2>Options execution journal</h2><p>Only confirmed paper or brokerage fills; never inferred from alerts.</p></div><span class="chip" id="execution-total">0 fills</span></div><div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:18px"><div class="metric"><div class="metlabel">Paper realized P&L</div><div id="paper-pnl" class="metvalue">—</div><div class="metfoot">Virtual fills only</div></div><div class="metric"><div class="metlabel">Live realized P&L</div><div id="live-pnl" class="metvalue">—</div><div class="metfoot">Requires broker-confirmed fills</div></div></div><div class="panel"><div class="scroll"><table><thead><tr><th>Filled at (ET)</th><th>Mode</th><th>Contract</th><th>Action</th><th>Qty</th><th>Fill price</th><th>Fees</th></tr></thead><tbody id="fill-rows"></tbody></table></div><div id="fill-empty" class="empty"><div class="symbol">⇄</div>No confirmed option fills recorded yet.<div class="subtle" style="margin-top:8px">The SnapTrade execution adapter will write here after verified fills; signals alone won't create trades.</div></div></div><div class="disclaimer">This ledger is not a brokerage statement. Its P&L reflects only matched, recorded fills and may omit market value, FX effects, unmatched inventory or older history.</div></div>
+    <!-- AION RESEARCH SUITE v1: read-only. Existing trading/signal tabs remain unchanged. -->
+    <div id="screener" class="section">
+      <div class="section-head"><div><h2>Stock & ETF Screener</h2><p>Editable watchlist · daily close indicators · research only</p></div><span class="chip">NOT OPTIONS EXECUTION DATA</span></div>
+      <div class="panel research-toolbar">
+        <label for="scan-tickers">Symbols (comma separated, up to 12)</label>
+        <div class="research-controls"><input id="scan-tickers" value="SPY,QQQ,IWM,DIA,AAPL,MSFT,NVDA,TSLA,AMZN,META" spellcheck="false" autocapitalize="characters" aria-label="Stock and ETF tickers"/><select id="scan-filter" aria-label="Trend filter"><option value="ALL">All trends</option><option value="BULLISH">Bullish</option><option value="BEARISH">Bearish</option><option value="MIXED">Mixed</option></select><button class="research-button" id="scan-go">Scan watchlist</button></div>
+        <div class="research-status" id="scan-status">Select Scan watchlist to retrieve market research data.</div>
+      </div>
+      <div class="panel" style="margin-top:15px"><div class="scroll"><table><thead><tr><th>Symbol</th><th>Last close</th><th>1D %</th><th>RSI(14)</th><th>Rel. vol</th><th>20D vol %</th><th>EMA trend</th><th>As of</th></tr></thead><tbody id="scan-rows"></tbody></table></div><div class="empty" id="scan-empty">No market scan loaded.</div></div>
+      <div class="section-head"><div><h2>Price & trend</h2><p>Click a screener symbol to inspect its daily closing prices</p></div></div>
+      <div class="panel panelbody"><div class="research-row"><strong id="scan-chart-title">SPY — daily history</strong><span class="chip" id="scan-chart-asof">—</span></div><div id="scan-chart" class="research-chart">Choose a symbol to load its chart.</div><div id="scan-chart-summary" class="subtle"></div></div>
+      <p class="disclaimer">Data provider: unofficial yfinance daily historical bars for personal research/testing only. Not a full-market screener, not guaranteed realtime, not licensed for AION Quant Labs commercial execution.</p>
+    </div>
+    <div id="sentiment" class="section">
+      <div class="section-head"><div><h2>News & Headline Sentiment</h2><p>Google News RSS search + VADER lexical scoring; not a trained finance model</p></div></div>
+      <div class="panel research-toolbar"><label for="news-symbol">Research ticker</label><div class="research-controls"><input id="news-symbol" value="SPY" maxlength="10" autocapitalize="characters"/><button class="research-button" id="news-go">Analyze headlines</button></div><div class="research-status" id="news-status">Load headlines to view sentiment.</div></div>
+      <div class="research-summary" id="news-summary"></div><div class="panel" style="margin-top:15px"><div id="news-list" class="news-list"><div class="empty">No headlines loaded.</div></div></div>
+      <p class="disclaimer">Headline sentiment is keyword-dependent and may be inaccurate, stale or unrelated to the underlying ticker. The model does not read article bodies or replicate your original HG sentiment analyzer.</p>
+    </div>
+    <div id="regimes" class="section">
+      <div class="section-head"><div><h2>Market Regime Lab</h2><p>HMM · GARCH · STORM-style proxy using daily closes</p></div></div>
+      <div class="panel research-toolbar"><label for="regime-symbol">Ticker</label><div class="research-controls"><input id="regime-symbol" value="SPY" maxlength="10" autocapitalize="characters"/><button class="research-button" id="regime-go">Analyze regime</button></div><div class="research-status" id="regime-status">Install advanced model dependencies for HMM and GARCH calculations.</div></div>
+      <div class="research-card-grid" id="regime-cards" style="margin-top:15px"><div class="metric"><div class="metlabel">Hidden Markov Model</div><div class="metvalue">—</div><div class="metfoot">Awaiting data</div></div><div class="metric"><div class="metlabel">GARCH(1,1)</div><div class="metvalue">—</div><div class="metfoot">Awaiting data</div></div><div class="metric"><div class="metlabel">STORM-style proxy</div><div class="metvalue">—</div><div class="metfoot">Awaiting data</div></div></div>
+      <div class="notice"><span><strong>Model transparency:</strong> HMM and GARCH are independently fitted research models when dependencies are installed. STORM is a momentum/volatility heuristic, not the original proprietary STORM algorithm. These daily regimes do not drive KAIROS V5 trades.</span></div>
+    </div>
+    <div id="backtests" class="section">
+      <!-- AION_ALPACA_PAPER_ALGO_PANEL_V1 — paper orders are NOT submitted by this UI -->
+      <div style="margin:18px 0;padding:15px;border:1px solid #5d6a86;border-radius:12px;background:#101e34">
+        <h3 style="color:#f1d17a">Alpaca PAPER — SPY 0DTE options chain &amp; chart</h3>
+        <p style="color:#c2ccdb">Read-only account and quote visualization. KAIROS PAPER orders are controlled separately by the local command-line worker; real brokerage accounts are excluded.</p>
+        <iframe title="Alpaca Paper options market data and order monitor" src="/alpaca-paper/"
+          loading="lazy" style="width:100%;height:670px;background:#0b1427;border:1px solid #4a5670;border-radius:9px"></iframe>
+      </div>
+
+      <div class="section-head"><div><h2>Integrated Backtesting Lab</h2><p>Original AION Quant Terminal v0.2 engine · running inside this website on port 8501</p></div><span class="pill warn">RESEARCH · NO ORDERS</span></div>
+      <div class="panel panelbody lab-explain"><strong>Choose genuine historical market data, run a strategy, and inspect stored trades.</strong><p class="subtitle">KAIROS V5 Core Port is <b>not Pine-accurate</b>: Lorentzian classifier, LC regime, and walk-forward HMM entry filters are not replicated. Exact Pine runs require TradingView CSV imports. Quote-driven options replay never invents premiums or fills.</p></div>
+      <div class="section-head"><div><h2>1 · Stock price history</h2><p>OHLCV ingestion and local cache</p></div><span id="lab-data-count" class="chip">Not checked</span></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Symbol <input id="lab-symbol" maxlength="12" value="SPY" autocapitalize="characters" /></label>
+        <label>Timeframe <select id="lab-interval"><option>1m</option><option>2m</option><option selected>3m</option><option>5m</option><option>15m</option><option>30m</option><option>1h</option><option>1d</option><option>1wk</option></select></label>
+        <label>Lookback <select id="lab-period"><option selected>5d</option><option>1mo</option><option>3mo</option><option>6mo</option><option>1y</option><option>2y</option><option>5y</option></select></label>
+        <label>Provider <select id="lab-provider"><option value="auto">Auto (Massive or Yahoo)</option><option value="yahoo">Yahoo</option><option value="massive">Massive (key needed)</option><option value="cache">Local cache</option></select></label>
+        <label>Start date (optional) <input id="lab-start" type="date" /></label>
+        <label>End date (optional) <input id="lab-end" type="date" /></label>
+       </div>
+       <div class="lab-actions"><button class="research-button" id="lab-download">Download / cache bars</button><button class="research-button secondary" id="lab-import-bars">Import stock CSV</button><input id="lab-bars-file" type="file" accept=".csv" hidden/><a href="/lab/api/data/template.csv" target="_blank">CSV template</a></div>
+       <div id="lab-data-status" class="lab-message" role="status">Choose a ticker, date range, and data source.</div>
+      </div>
+      <div class="section-head"><div><h2>2 · Stock strategy backtest</h2><p>Executable KAIROS core-port share model; not a complete V5 replica</p></div></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Share notional (USD) <input id="lab-notional" type="number" min="100" max="1000000" value="2500" /></label>
+        <label>Profit target (R) <input id="lab-r" type="number" min="0.1" max="8" step="0.1" value="0.4" /></label>
+        <label>Stop distance (ATR ×) <input id="lab-atr" type="number" min="0.05" max="20" step="0.05" value="1.5" /></label>
+        <label>Session cutoff (ET) <select id="lab-cutoff"><option>15:00</option><option>15:30</option><option>15:55</option></select></label>
+       </div>
+       <div class="lab-check-row"><label><input type="checkbox" id="lab-smoothing" checked/> Kernel smoothing</label><label><input type="checkbox" id="lab-vp" checked/> Volatility push</label><label><input type="checkbox" id="lab-slope"/> Slope filter</label><label><input type="checkbox" id="lab-ema"/> EMA 200</label><label><input type="checkbox" id="lab-sma"/> SMA 200</label></div>
+       <div class="lab-actions"><button class="research-button" id="lab-run-stock">Run KAIROS core stock backtest</button><span class="tiny">Historical stock share results only — not live options P&amp;L.</span></div>
+       <div id="lab-stock-status" class="lab-message" role="status">Ready to run.</div>
+      </div>
+      <div class="section-head"><div><h2>3 · Historical SPY 0DTE replay</h2><p>Real timestamped bid/ask quotes required for options pricing</p></div></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Signal source <select id="lab-signal-source"><option value="stock_run">KAIROS core stock run</option><option value="signal_set">Imported Pine signal timestamps</option></select></label>
+        <label>Signal set <select id="lab-signal-set"><option value="">None imported</option></select></label>
+        <label>Contract selection <select id="lab-contract-mode"><option value="atm">Same-day ATM</option><option value="signal">Exact contract from signals</option></select></label>
+        <label>Contracts <input id="lab-qty" type="number" min="1" max="100" value="1" /></label>
+        <label>ATM strike increment <select id="lab-step"><option value="0.5">$0.50</option><option value="1">$1.00</option></select></label>
+        <label>Exit rule <select id="lab-exit-mode"><option value="signal">Underlying signal exit</option><option value="premium_bracket">Observed option bid stop/target</option></select></label>
+        <label>Option premium stop (%) <input id="lab-premium-stop" type="number" value="25" min="5" max="95" /></label>
+        <label>Profit target (R) <input id="lab-premium-r" type="number" step="0.1" value="1" min="0.1" max="10" /></label>
+       </div>
+       <div class="lab-check-row"><label><input id="lab-auto-quotes" type="checkbox" /> Fetch historical option quotes from Massive (requires separate entitlement)</label></div>
+       <div class="lab-actions"><button class="research-button secondary" id="lab-import-signals">Import Pine signal CSV</button><input id="lab-signals-file" type="file" accept=".csv" hidden/><button class="research-button secondary" id="lab-import-quotes">Import options NBBO CSV</button><input id="lab-quotes-file" type="file" accept=".csv" hidden/><button class="research-button" id="lab-run-options">Run 0DTE replay</button></div>
+       <div class="lab-actions lab-links"><a href="/lab/api/signals/template.csv">Signal template</a><a href="/lab/api/options/quotes/template.csv">Option quote template</a></div>
+       <div id="lab-options-status" class="lab-message" role="status">Historical options require valid 0DTE bid/ask quotes at entry and exit. No quotes means no fabricated fills.</div>
+      </div>
+      <div class="section-head"><div><h2>4 · Recorded backtests</h2><p>Saved automatically in the integrated backtesting database</p></div></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Saved run <select id="lab-run-select"><option value="">No runs yet</option></select></label>
+        <label>CSV algorithm <select id="lab-algorithm"><option>KAIROS_V5</option></select></label>
+       </div>
+       <div class="lab-actions"><button class="research-button secondary" id="lab-import-trades">Import TradingView Strategy Tester CSV</button><input id="lab-trades-file" type="file" accept=".csv" hidden/><button class="research-button secondary" id="lab-refresh-runs">Refresh saved runs</button><a href="/lab/api/trades-template.csv">Trade CSV template</a></div>
+       <div id="lab-run-status" class="lab-message" role="status">Select a backtest to view its equity curve and completed trades.</div>
+       <div id="lab-metrics" class="lab-metrics"></div>
+       <div id="lab-equity" class="lab-equity"></div>
+       <div class="scroll lab-trades-scroll"><table><thead><tr><th>Exit time</th><th>Side</th><th>Contract</th><th>Entry</th><th>Exit</th><th>P&amp;L (USD)</th></tr></thead><tbody id="lab-trades-rows"></tbody></table></div>
+      </div>
+      <details class="lab-advanced"><summary>Advanced original Quant Terminal interface (embedded here, same website)</summary><p class="tiny">The complete v0.2 research interface and original controls are also available below. It runs in the same FastAPI process; no second server or port 8000 needed.</p><iframe title="Original AION Quant Terminal research interface" src="/lab/" loading="lazy" referrerpolicy="same-origin"></iframe></details>
+      <p class="disclaimer">Research only. Core V5 port omits LC/ML/HMM entry gates and is not Pine-parity-verified. Stock-bar fills are not option fills; options quote replay requires genuine historical bid/ask quotes. No brokerage order submission is present.</p>
+    </div>
+    <div id="system" class="section"><div class="section-head"><div><h2>System diagnostics</h2><p>Read-only view of local AION services</p></div></div><div class="panel"><div class="panelbody state-grid"><div class="state-row"><span>Monitor service</span><strong class="good">ONLINE — PORT 8501</strong></div><div class="state-row"><span>KAIROS simulator</span><strong id="sys-aion">—</strong></div><div class="state-row"><span>Webhook gateway</span><strong>NOT DIRECTLY MONITORED (PORT 8002)</strong></div><div class="state-row"><span>Mode</span><strong id="sys-mode">—</strong></div><div class="state-row"><span>Trading hours enforcement</span><strong id="sys-session">—</strong></div><div class="state-row"><span>Broker submission</span><strong class="good">NOT AVAILABLE FROM DASHBOARD</strong></div><div class="state-row"><span>Updated</span><strong id="sys-last">—</strong></div><div class="state-row"><span>Errors</span><strong id="sys-errors">None</strong></div></div></div><p class="disclaimer">Security: expose only through a private, authenticated Tailscale network. Do not publish this monitor via your TradingView Cloudflare Quick Tunnel.</p></div>
+    <div class="details"><span>AION Quant Labs</span><span>KAIROS LC V5</span><span>Auto-refresh · 8 seconds</span><span>Read-only interface</span></div>
+  </main>
+</div>
+<nav class="mobilenav" aria-label="Navigation"><button data-section="overview" class="active"><b>◫</b>Overview</button><button data-section="signals"><b>⌁</b>Signals</button><button data-section="executions"><b>⇄</b>Fills</button><button data-section="screener"><b>⌕</b>Scan</button><button data-section="sentiment"><b>☷</b>News</button><button data-section="regimes"><b>◈</b>Regime</button><button data-section="backtests"><b>▤</b>Backtests</button><button data-section="system"><b>⚙</b>System</button></nav>
+<script>
+(() => {
+'use strict';
+const $=id=>document.getElementById(id);
+const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const et=iso=>{try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(iso))}catch{return '—'}};
+const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(v);
+const display=v=>(v===null||v===undefined||v==='')?'—':escape(v);
+const label=v=>v==='BUY_CALL'?'CALL':v==='BUY_PUT'?'PUT':v==='EXIT'?'EXIT':String(v??'—');
+const dirTag=v=>`<span class="tag ${v==='BUY_CALL'?'call':v==='BUY_PUT'?'put':'exit'}">${escape(label(v))}</span>`;
+const resultTag=v=>`<span class="tag ${String(v).includes('LOGGED')?'logged':'ignored'}">${escape(v)}</span>`;
+const rows=(id,data)=>{$(id).innerHTML=data.join('')};
+function render(data){
+ const status=data.status||{}, health=data.health||{}, evs=Array.isArray(data.events)?data.events:[],fills=Array.isArray(data.fills)?data.fills:[],sum=data.fill_summary||{};
+ $('clock').textContent=et(data.generated_at)+' ET';
+ const ok=!!data.aion_online;$('connection-pill').textContent=ok?'AION ONLINE':'AION OFFLINE';$('connection-pill').className='pill '+(ok?'ok':'off');
+ $('notice').textContent=ok?'Signal logs show intent only. Options fills and P&L require the future verified execution adapter.':'AION signal server is unavailable. Restart the local service on port 8001; the dashboard will reconnect automatically.';
+ $('signals-count').textContent=Number.isFinite(Number(status.signals_logged))?Number(status.signals_logged).toLocaleString():'—';
+ $('current-intent').textContent=display(status.intent_state);$('fill-count').textContent=fills.length;
+ $('pnl').textContent=fills.length?money((sum.realized_pnl_usd?.PAPER||0)+(sum.realized_pnl_usd?.LIVE||0)):'—';
+ $('pnl-foot').textContent=fills.length?'Matched fill P&L before FX':'Not available until confirmed fills';
+ $('receiver-state').textContent=ok?'ONLINE':'OFFLINE';$('receiver-state').className=ok?'good':'bad';
+ $('execution-mode').textContent=display(health.mode);$('broker-routing').textContent=health.broker_orders_enabled?'ENABLED ELSEWHERE':'DISABLED';
+ $('broker-routing').className=health.broker_orders_enabled?'bad':'good';
+ $('paper-open').textContent=sum.open_contracts?.PAPER??'—';$('live-open').textContent=sum.open_contracts?.LIVE??'—';
+ $('paper-pnl').textContent=fills.some(f=>f.mode==='PAPER')?money(sum.realized_pnl_usd?.PAPER||0):'—';
+ $('live-pnl').textContent=fills.some(f=>f.mode==='LIVE')?money(sum.realized_pnl_usd?.LIVE||0):'—';
+ $('execution-total').textContent=(sum.fills_recorded||0)+' fill(s)';
+ $('signals-total').textContent=(status.signals_logged??evs.length)+' recorded event(s)';
+ rows('recent-rows',evs.slice(0,6).map(e=>`<tr><td>${escape(et(e.received_at))}</td><td>${dirTag(e.signal)}</td><td>${resultTag(e.result)}</td><td>${display(e.intent_state)}</td></tr>`));
+ rows('signal-rows',evs.map(e=>`<tr><td>${escape(et(e.received_at))}</td><td>${display(e.strategy)}</td><td>${display(e.symbol)}</td><td>${dirTag(e.signal)}</td><td>${resultTag(e.result)}</td><td>${display(e.intent_state)}</td></tr>`));
+ rows('fill-rows',fills.map(f=>`<tr><td>${escape(et(f.filled_at))}</td><td>${escape(f.mode)}</td><td>${display(f.option_symbol)}</td><td>${display(f.action)}</td><td>${display(f.contracts)}</td><td>${money(f.fill_price||0)}</td><td>${money(f.fees_usd||0)}</td></tr>`));
+ $('recent-empty').hidden=evs.length>0;$('signals-empty').hidden=evs.length>0;$('fill-empty').hidden=fills.length>0;
+ $('sys-aion').textContent=ok?'ONLINE / 8001':'OFFLINE';$('sys-aion').className=ok?'good':'bad';
+ $('sys-mode').textContent=display(health.mode);$('sys-session').textContent=health.session_enforced===true?'ENFORCED':health.session_enforced===false?'NOT ENFORCED (SIMULATION)':'UNKNOWN';
+ $('sys-session').className=health.session_enforced?'good':'bad';$('sys-last').textContent=et(data.generated_at)+' ET';
+ $('sys-errors').textContent=data.errors?.length?data.errors.join('; '):'None';
+ renderChart(evs);
+}
+function renderChart(evs){
+ const dayKey=d=>{const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));return p.year+'-'+p.month+'-'+p.day;};
+ const days=[];const counts=[];const now=new Date();
+ for(let i=6;i>=0;i--){const d=new Date(now);d.setUTCDate(d.getUTCDate()-i);days.push(dayKey(d));counts.push(0)}
+ for(const e of evs){const d=new Date(e.received_at);if(!isNaN(d.getTime())){const n=days.indexOf(dayKey(d));if(n>=0)counts[n]++}}
+ const max=Math.max(1,...counts);
+ $('activity-chart').innerHTML=days.map((date,i)=>{const pct=Math.max(2,counts[i]/max*135);const day=date.slice(-2);return `<div class="chart-day"><span style="font-size:10px;color:#b1cccf">${counts[i]||''}</span><div class="chart-bar" title="${escape(date)}: ${counts[i]} events" style="height:${pct}px"></div><span class="chart-label">${escape(day)}</span></div>`}).join('');
+}
+async function refresh(){try{const res=await fetch('api/snapshot',{cache:'no-store'});if(!res.ok)throw new Error(res.status);render(await res.json())}catch{$('connection-pill').textContent='MONITOR ERROR';$('connection-pill').className='pill off'}}
+function changeTab(name){document.querySelectorAll('[data-section]').forEach(b=>b.classList.toggle('active',b.dataset.section===name));document.querySelectorAll('.section').forEach(el=>el.classList.toggle('active',el.id===name));}
+document.querySelectorAll('button[data-section]').forEach(b=>b.addEventListener('click',()=>changeTab(b.dataset.section)));
+$('refresh').addEventListener('click',refresh);
+// AION Research Suite: read-only browser handlers. Loaded only when requested.
+const analytics = (() => {
+ const view=(id,s)=>{const el=$(id);if(el)el.innerHTML=s};
+ const show=(id,s)=>{const el=$(id);if(el)el.textContent=s};
+ const fnum=(n,d=2)=>n===null||n===undefined||!Number.isFinite(Number(n))?'—':Number(n).toFixed(d);
+ const pnum=n=>n===null||n===undefined?'—':(n>0?'+':'')+fnum(n,2)+'%';
+ const q=t=>String(t||'').trim().toUpperCase();
+ const safeTicker=s=>/^[A-Z][A-Z0-9.^-]{0,9}$/.test(s);
+ const asMessage=e=>e?.message||e?.detail||'Research feed temporarily unavailable.';
+ async function api(route,params){const qs=new URLSearchParams(params||{});const res=await fetch('/api/research/'+route+(qs.size?'?'+qs:''),{cache:'no-store'});const obj=await res.json();if(!res.ok)throw new Error(typeof obj.detail==='string'?obj.detail:'Service '+res.status);return obj;}
+ let scanRows=[];
+ function renderScan(){let values=scanRows.slice();const filter=$('scan-filter').value;if(filter!=='ALL')values=values.filter(x=>x.trend===filter);
+  view('scan-rows',values.map(x=>`<tr data-symbol="${escape(x.symbol)}"><td><strong>${escape(x.symbol)}</strong></td><td>$${fnum(x.last)}</td><td class="${x.change_pct>=0?'good':'bad'}">${pnum(x.change_pct)}</td><td>${fnum(x.rsi_14,1)}</td><td>${fnum(x.rvol)}x</td><td>${fnum(x.realized_vol_20d_pct)}%</td><td>${escape(x.trend)}</td><td>${escape(x.date)}</td></tr>`).join(''));
+  $('scan-empty').hidden=values.length>0;$('scan-empty').textContent=scanRows.length?'No matches for selected trend.':'No research rows available.';
+  document.querySelectorAll('#scan-rows tr[data-symbol]').forEach(tr=>tr.addEventListener('click',()=>loadChart(tr.dataset.symbol)));
+ }
+ async function loadScan(){const btn=$('scan-go');btn.disabled=true;show('scan-status','Loading daily watchlist bars…');try{const data=await api('screener',{tickers:$('scan-tickers').value});scanRows=data.rows||[];renderScan();show('scan-status',`${scanRows.length} symbol(s) · ${data.frequency} · ${data.errors.length} unavailable · as of ${et(data.generated_at)} ET`);if(scanRows.length)loadChart(scanRows[0].symbol);}catch(e){show('scan-status',asMessage(e));scanRows=[];renderScan();}finally{btn.disabled=false;}}
+ async function loadChart(symbol){show('scan-chart-title',symbol+' — daily close');show('scan-chart-asof','Loading');view('scan-chart','Fetching historical closes…');try{const data=await api('chart',{symbol});const arr=(data.series||[]).filter(x=>Number.isFinite(Number(x.close)));if(arr.length<2)throw new Error('Not enough chart bars');const vals=arr.map(x=>Number(x.close)),mn=Math.min(...vals),mx=Math.max(...vals),range=Math.max(0.00001,mx-mn),w=800,h=210;const pts=arr.map((x,i)=>`${(i/(arr.length-1)*w).toFixed(2)},${(15+(mx-Number(x.close))/range*(h-30)).toFixed(2)}`).join(' ');view('scan-chart',`<svg viewBox="0 0 800 210" role="img" aria-label="Historical daily closes for ${escape(symbol)}"><defs><linearGradient id="priceg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#537ef1"/><stop offset="1" stop-color="#ead19b"/></linearGradient></defs><line x1="0" y1="195" x2="800" y2="195" stroke="#2b3a4c"/><polyline fill="none" stroke="url(#priceg)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" points="${pts}"/></svg>`);show('scan-chart-asof','Through '+data.date);show('scan-chart-summary',`Last close $${fnum(data.metrics.last)} · RSI ${fnum(data.metrics.rsi_14,1)} · Trend ${data.metrics.trend} · ${arr.length} daily bars`);}catch(e){view('scan-chart','Historical chart unavailable: '+escape(asMessage(e)));show('scan-chart-asof','Unavailable');}}
+ async function loadNews(){const symbol=q($('news-symbol').value);if(!safeTicker(symbol)){show('news-status','Invalid ticker');return;}const btn=$('news-go');btn.disabled=true;show('news-status','Loading Google News headline feed…');try{const data=await api('sentiment',{symbol});show('news-status',`${data.headline_count} matching headlines · ${data.method}`);view('news-summary',`<div class="metric"><div class="metlabel">Headline sentiment</div><div class="metvalue">${escape(data.label)}</div><div class="metfoot">Lexical VADER score</div></div><div class="metric"><div class="metlabel">Average compound</div><div class="metvalue">${fnum(data.average_compound,3)}</div><div class="metfoot">-1 bearish to +1 bullish</div></div><div class="metric"><div class="metlabel">Headlines</div><div class="metvalue">${data.headline_count}</div><div class="metfoot">Google News RSS search</div></div>`);
+ view('news-list',(data.headlines||[]).map(x=>{const valid=/^https:\/\//.test(x.url);return `<div class="news-item"><div><a href="${valid?escape(x.url):'#'}" rel="noopener noreferrer" target="_blank">${escape(x.title)}</a><div class="news-meta">${escape(x.source)} · ${escape(x.published)}</div></div><div class="sentiment-tag ${escape(x.label)}">${escape(x.label)} ${x.sentiment===null?'':fnum(x.sentiment,2)}</div></div>`;}).join('')||'<div class="empty">No matching headlines returned.</div>');}catch(e){show('news-status',asMessage(e));view('news-list','<div class="empty">News unavailable. Retry later.</div>');}finally{btn.disabled=false;}}
+ async function loadRegime(){const symbol=q($('regime-symbol').value);if(!safeTicker(symbol)){show('regime-status','Invalid ticker');return;}const btn=$('regime-go');btn.disabled=true;show('regime-status','Fitting historical research models…');try{const data=await api('regime',{symbol});show('regime-status',`${symbol} · daily timeframe · bars through ${data.as_of} · no connection to trade execution`);const card=(title,value,foot)=>`<div class="metric"><div class="metlabel">${escape(title)}</div><div class="metvalue amber">${escape(value??'—')}</div><div class="metfoot">${escape(foot)}</div></div>`;
+ view('regime-cards',card('HMM state',data.hmm?.state,`${data.hmm?.confidence??'—'}% fitted state probability · ${data.hmm?.method||''}`)+card('GARCH forecast',data.garch?.annualized_pct==null?'Unavailable':data.garch.annualized_pct+'%',data.garch?.method||'')+card('STORM-style proxy',data.storm?.state,data.storm?.method||''));}catch(e){show('regime-status',asMessage(e));view('regime-cards','<div class="panelbody">Regime research unavailable. Check provider and dependencies.</div>');}finally{btn.disabled=false;}}
+ async function checkTerminal(){return;}
+ $('scan-go').addEventListener('click',loadScan);$('scan-filter').addEventListener('change',renderScan);$('news-go').addEventListener('click',loadNews);$('regime-go').addEventListener('click',loadRegime);
+ const loaded=new Set();document.querySelectorAll('button[data-section]').forEach(button=>button.addEventListener('click',()=>{const section=button.dataset.section;if(loaded.has(section))return;loaded.add(section);if(section==='screener')loadScan();if(section==='sentiment')loadNews();if(section==='regimes')loadRegime();if(section==='backtests')integratedLab.init();}));
+ return {loadScan,loadNews,loadRegime,checkTerminal};
+})();
+
+// AION Unified Lab: runs the user's original v0.2 backtest engine inside the same site.
+// This is research-only. No SnapTrade or brokerage order endpoints are imported.
+const integratedLab=(()=>{
+ const prefix='/lab/api/';let initialized=false,runs=[],selectedRun=null;
+ const text=(id,s)=>{const n=$(id);if(n)n.textContent=String(s??'')};
+ const html=(id,s)=>{const n=$(id);if(n)n.innerHTML=s};
+ const str=id=>($(id)?.value||'').trim();
+ const bool=id=>!!$(id)?.checked;
+ const moneyLab=n=>Number.isFinite(Number(n))?'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+ const fmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString('en-US',{maximumFractionDigits:2}):'—';
+ const status=(id,msg,fail=false)=>{const n=$(id);if(!n)return;n.textContent=msg;n.classList.toggle('error',fail);n.classList.toggle('ok',!fail)};
+ async function api(path,opts={}){
+   const resp=await fetch(prefix+path,{cache:'no-store',...opts});let data={};
+   try{data=await resp.json()}catch{}
+   if(!resp.ok){let d=data?.detail;throw Error(typeof d==='string'?d:`Backtest API error ${resp.status}`)}
+   return data;
+ }
+ function sel(){return {symbol:str('lab-symbol').toUpperCase(),interval:str('lab-interval'),period:str('lab-period'),provider:str('lab-provider'),start:str('lab-start')||null,end:str('lab-end')||null}}
+ function requestJSON(body){return {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}}
+ function valid(){const s=sel();if(!/^[A-Z][A-Z0-9.^=-]{0,11}$/.test(s.symbol))throw Error('Enter a valid ticker');return s;}
+ async function dataStatus(){try{const s=valid();const d=await api(`data/status?symbol=${encodeURIComponent(s.symbol)}&interval=${s.interval}`);text('lab-data-count',`${d.bars} bars cached`);}catch(e){text('lab-data-count','Data unavailable')}}
+ async function download(){const b=$('lab-download');b.disabled=true;status('lab-data-status','Loading OHLCV from configured provider…');try{const d=await api('data/download',requestJSON(valid()));status('lab-data-status',`Cached ${d.count} real bars: ${d.first_bar} → ${d.last_bar}\nProvider: ${d.source}\n${d.warning}`,false);await dataStatus()}catch(e){status('lab-data-status',e.message,true)}finally{b.disabled=false}}
+ async function upload(kind,file){if(!file)return;const ids={bars:'lab-data-status',signals:'lab-options-status',quotes:'lab-options-status',trades:'lab-run-status'};const id=ids[kind];status(id,`Importing ${kind}…`);const f=new FormData();f.append('file',file);
+  let ep='';const s=sel();if(kind==='bars'){ep='data/import';f.append('symbol',s.symbol);f.append('interval',s.interval)}
+  if(kind==='signals'){ep='signals/import';f.append('symbol',s.symbol);f.append('algorithm','KAIROS_V5')}
+  if(kind==='quotes')ep='options/quotes/import';
+  if(kind==='trades'){ep='backtests/import';f.append('symbol',s.symbol);f.append('timeframe',s.interval);f.append('algorithm',str('lab-algorithm'));f.append('label',`${str('lab-algorithm')} · ${s.symbol} · imported`)}
+  try{const d=await api(ep,{method:'POST',body:f});let msg='Imported successfully.';
+    if(kind==='bars'){msg=`Imported ${d.count} real bars, ${d.first_bar} → ${d.last_bar}`;await dataStatus()}
+    else if(kind==='signals'){msg=`Imported ${d.rows} historical Pine signal(s) to signal set #${d.id}. Option premiums still require real quotes.`;await loadSignals();$('lab-signal-source').value='signal_set';$('lab-signal-set').value=String(d.id)}
+    else if(kind==='quotes')msg=`Imported ${d.quotes} real bid/ask quotes from ${d.contracts} contract(s).`;
+    else if(kind==='trades'){msg=`Imported ${d.metrics?.trades||0} actual reported trade rows. Source: user-provided CSV.`;await loadRuns(d.id)}
+    status(id,msg,false);
+  }catch(e){status(id,e.message,true)}finally{const x=$('lab-'+kind+'-file');if(x)x.value=''}
+ }
+ async function runStock(){const b=$('lab-run-stock');b.disabled=true;status('lab-stock-status','Running KAIROS V5 CORE PORT on historical share candles…');try{const s=valid();if(['1d','1wk'].includes(s.interval))throw Error('Choose an intraday interval for KAIROS core port.');
+  const payload={...s,algorithm:'KAIROS_V5_CORE_PORT',parameters:{notional_usd:Number(str('lab-notional')),reward_r:Number(str('lab-r')),atr_multiple:Number(str('lab-atr')),cutoff:str('lab-cutoff'),smoothing:bool('lab-smoothing'),use_vp:bool('lab-vp'),use_slope:bool('lab-slope'),use_ema:bool('lab-ema'),use_sma:bool('lab-sma')}};
+  const d=await api('strategy/run',requestJSON(payload));if(d.status!=='ok'){status('lab-stock-status',`${d.note}\n${d.warning}`);return}
+  await loadRuns(d.run.id);status('lab-stock-status',`Saved run #${d.run.id} · ${d.run.metrics.trades} trades · P&L ${moneyLab(d.run.metrics.net_pnl)} · ${d.coverage.count} stock candles\n${d.warning}`);
+ }catch(e){status('lab-stock-status',e.message,true)}finally{b.disabled=false}}
+ async function loadSignals(){try{const out=await api('signals');const list=Array.isArray(out)?out:[];html('lab-signal-set',list.length?list.map(x=>`<option value="${x.id}">${escape(x.label)} (${escape(x.symbol)})</option>`).join(''):'<option value="">None imported</option>')}catch(e){status('lab-options-status','Signal sets unavailable: '+e.message,true)}}
+ async function runOptions(){const b=$('lab-run-options');b.disabled=true;status('lab-options-status','Matching real options bid/ask quotes against your historical signals…');try{const s=valid();const source=str('lab-signal-source');const payload={symbol:s.symbol,source,run_id:Number(str('lab-run-select')),signal_set_id:Number(str('lab-signal-set')),contracts:str('lab-contract-mode'),strike_step:Number(str('lab-step')),qty:Number(str('lab-qty')),exit_mode:str('lab-exit-mode'),premium_stop_pct:Number(str('lab-premium-stop'))/100,premium_reward_r:Number(str('lab-premium-r')),auto_download:bool('lab-auto-quotes')};const d=await api('options/run',requestJSON(payload));const c=d.coverage||{};const errors=(c.errors||[]).slice(0,5).map(e=>e.reason||'Missing option quote');
+ if(d.status==='ok'){await loadRuns(d.run.id)}
+ status('lab-options-status',`${d.status==='ok'?`Completed ${d.run.metrics.trades} quote-covered option trade(s). P&L ${moneyLab(d.run.metrics.net_pnl)}.`:'No quote-covered options trades; no synthetic options P&L created.'}\nCoverage: ${c.filled||0}/${c.requested||0} matched, ${c.skipped||0} skipped.\n${errors.join('\n')}\n${d.warning}`);
+ }catch(e){status('lab-options-status',e.message,true)}finally{b.disabled=false}}
+ async function loadAlgorithms(){try{const d=await api('algorithms');html('lab-algorithm',(d||[]).map(x=>`<option value="${escape(x.id)}">${escape(x.name)}</option>`).join(''));$('lab-algorithm').value='KAIROS_V5'}catch(e){status('lab-run-status','Could not load algorithm list: '+e.message,true)}}
+ async function loadRuns(id){try{const d=await api('backtests');runs=Array.isArray(d)?d:[];html('lab-run-select',runs.length?runs.map(x=>`<option value="${x.id}">#${x.id} · ${escape(x.label)} · ${escape(x.source)}</option>`).join(''):'<option value="">No runs yet</option>');if(id&&runs.some(x=>x.id===id))$('lab-run-select').value=String(id);else if(runs.length)$('lab-run-select').value=String(runs[0].id);if(runs.length)await showRun();else{html('lab-metrics','');html('lab-equity','<div class="empty">Run or import a backtest to see the equity curve.</div>');html('lab-trades-rows','')}}catch(e){status('lab-run-status','Could not load saved backtests: '+e.message,true)}}
+ function curve(seq){if(!Array.isArray(seq)||seq.length<2)return '<div class="empty">Not enough completed trades to draw an equity curve.</div>';const values=seq.map(x=>Number(x)).filter(Number.isFinite);if(values.length<2)return '<div class="empty">No equity points.</div>';const lo=Math.min(0,...values),hi=Math.max(0,...values),span=hi-lo||1;const pts=values.map((v,i)=>`${30+i/(values.length-1)*760},${15+(hi-v)/span*175}`).join(' ');return `<svg viewBox="0 0 820 220" role="img" aria-label="Trade-by-trade cumulative profit and loss"><line x1="30" y1="${15+hi/span*175}" x2="790" y2="${15+hi/span*175}" stroke="#4b6379" stroke-dasharray="5 5"/><polyline points="${pts}" stroke="#d7b675" fill="none" stroke-width="3" stroke-linejoin="round"/><text x="30" y="212" fill="#9eb2c8" font-size="13">START</text><text x="790" y="212" text-anchor="end" fill="#9eb2c8" font-size="13">LAST TRADE · ${moneyLab(values.at(-1))}</text></svg>`}
+ async function showRun(){const id=Number(str('lab-run-select'));if(!id)return;try{const d=await api('backtests/'+id);selectedRun=d;const m=d.metrics||{};status('lab-run-status',`Run #${id} · ${d.label} · ${d.source}\n${d.start_date||'—'} → ${d.end_date||'—'}`);
+  const fields=[['Net P&L',moneyLab(m.net_pnl)],['Trades',fmt(m.trades)],['Win rate',fmt(m.win_rate)+'%'],['Profit factor',m.profit_factor===null?'n/a':fmt(m.profit_factor)],['Max drawdown',moneyLab(m.max_drawdown_usd)]];
+  html('lab-metrics',fields.map(([name,val])=>`<div class="metric"><div class="metlabel">${escape(name)}</div><div class="metvalue">${escape(val)}</div></div>`).join(''));
+  const line=[0,...((m.equity||[]).map(p=>p.pnl))];html('lab-equity',curve(line));
+  html('lab-trades-rows',(d.trades||[]).slice(0,120).map(t=>`<tr><td>${escape(t.exit_at||t.date||'—')}</td><td>${escape(t.side||'—')}</td><td>${escape(t.contract||'Shares / imported')}</td><td>${t.entry_price===undefined?'—':moneyLab(t.entry_price)}</td><td>${t.exit_price===undefined?'—':moneyLab(t.exit_price)}</td><td style="color:${Number(t.pnl)>=0?'#7ce5c0':'#ff9eaa'}">${moneyLab(t.pnl)}</td></tr>`).join(''));
+ }catch(e){status('lab-run-status',e.message,true)}}
+ function hookUpload(id,kind){$(id).addEventListener('click',()=>$('lab-'+kind+'-file').click());$('lab-'+kind+'-file').addEventListener('change',e=>upload(kind,e.target.files?.[0]))}
+ function init(){if(initialized)return;initialized=true;
+  $('lab-download').addEventListener('click',download);$('lab-run-stock').addEventListener('click',runStock);$('lab-run-options').addEventListener('click',runOptions);
+  $('lab-refresh-runs').addEventListener('click',()=>loadRuns());$('lab-run-select').addEventListener('change',showRun);
+  hookUpload('lab-import-bars','bars');hookUpload('lab-import-signals','signals');hookUpload('lab-import-quotes','quotes');hookUpload('lab-import-trades','trades');
+  $('lab-symbol').addEventListener('change',dataStatus);$('lab-interval').addEventListener('change',dataStatus);
+  loadAlgorithms();loadRuns();loadSignals();dataStatus();
+ }
+ document.querySelectorAll('button[data-section="backtests"]').forEach(b=>b.addEventListener('click',init));
+ return {init};
+})();
+
+refresh();setInterval(refresh,8000);
+})();
+</script>
+</body>
+</html>

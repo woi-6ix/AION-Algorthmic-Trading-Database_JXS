@@ -1,0 +1,2 @@
+hmmlearn>=0.3.3
+arch>=7.2

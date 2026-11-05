@@ -1,0 +1,60 @@
+    <div id="backtests" class="section">
+      <div class="section-head"><div><h2>Integrated Backtesting Lab</h2><p>Original AION Quant Terminal v0.2 engine · running inside this website on port 8501</p></div><span class="pill warn">RESEARCH · NO ORDERS</span></div>
+      <div class="panel panelbody lab-explain"><strong>Choose genuine historical market data, run a strategy, and inspect stored trades.</strong><p class="subtitle">KAIROS V5 Core Port is <b>not Pine-accurate</b>: Lorentzian classifier, LC regime, and walk-forward HMM entry filters are not replicated. Exact Pine runs require TradingView CSV imports. Quote-driven options replay never invents premiums or fills.</p></div>
+      <div class="section-head"><div><h2>1 · Stock price history</h2><p>OHLCV ingestion and local cache</p></div><span id="lab-data-count" class="chip">Not checked</span></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Symbol <input id="lab-symbol" maxlength="12" value="SPY" autocapitalize="characters" /></label>
+        <label>Timeframe <select id="lab-interval"><option>1m</option><option>2m</option><option selected>3m</option><option>5m</option><option>15m</option><option>30m</option><option>1h</option><option>1d</option><option>1wk</option></select></label>
+        <label>Lookback <select id="lab-period"><option selected>5d</option><option>1mo</option><option>3mo</option><option>6mo</option><option>1y</option><option>2y</option><option>5y</option></select></label>
+        <label>Provider <select id="lab-provider"><option value="auto">Auto (Massive or Yahoo)</option><option value="yahoo">Yahoo</option><option value="massive">Massive (key needed)</option><option value="cache">Local cache</option></select></label>
+        <label>Start date (optional) <input id="lab-start" type="date" /></label>
+        <label>End date (optional) <input id="lab-end" type="date" /></label>
+       </div>
+       <div class="lab-actions"><button class="research-button" id="lab-download">Download / cache bars</button><button class="research-button secondary" id="lab-import-bars">Import stock CSV</button><input id="lab-bars-file" type="file" accept=".csv" hidden/><a href="/lab/api/data/template.csv" target="_blank">CSV template</a></div>
+       <div id="lab-data-status" class="lab-message" role="status">Choose a ticker, date range, and data source.</div>
+      </div>
+      <div class="section-head"><div><h2>2 · Stock strategy backtest</h2><p>Executable KAIROS core-port share model; not a complete V5 replica</p></div></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Share notional (USD) <input id="lab-notional" type="number" min="100" max="1000000" value="2500" /></label>
+        <label>Profit target (R) <input id="lab-r" type="number" min="0.1" max="8" step="0.1" value="0.4" /></label>
+        <label>Stop distance (ATR ×) <input id="lab-atr" type="number" min="0.05" max="20" step="0.05" value="1.5" /></label>
+        <label>Session cutoff (ET) <select id="lab-cutoff"><option>15:00</option><option>15:30</option><option>15:55</option></select></label>
+       </div>
+       <div class="lab-check-row"><label><input type="checkbox" id="lab-smoothing" checked/> Kernel smoothing</label><label><input type="checkbox" id="lab-vp" checked/> Volatility push</label><label><input type="checkbox" id="lab-slope"/> Slope filter</label><label><input type="checkbox" id="lab-ema"/> EMA 200</label><label><input type="checkbox" id="lab-sma"/> SMA 200</label></div>
+       <div class="lab-actions"><button class="research-button" id="lab-run-stock">Run KAIROS core stock backtest</button><span class="tiny">Historical stock share results only — not live options P&amp;L.</span></div>
+       <div id="lab-stock-status" class="lab-message" role="status">Ready to run.</div>
+      </div>
+      <div class="section-head"><div><h2>3 · Historical SPY 0DTE replay</h2><p>Real timestamped bid/ask quotes required for options pricing</p></div></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Signal source <select id="lab-signal-source"><option value="stock_run">KAIROS core stock run</option><option value="signal_set">Imported Pine signal timestamps</option></select></label>
+        <label>Signal set <select id="lab-signal-set"><option value="">None imported</option></select></label>
+        <label>Contract selection <select id="lab-contract-mode"><option value="atm">Same-day ATM</option><option value="signal">Exact contract from signals</option></select></label>
+        <label>Contracts <input id="lab-qty" type="number" min="1" max="100" value="1" /></label>
+        <label>ATM strike increment <select id="lab-step"><option value="0.5">$0.50</option><option value="1">$1.00</option></select></label>
+        <label>Exit rule <select id="lab-exit-mode"><option value="signal">Underlying signal exit</option><option value="premium_bracket">Observed option bid stop/target</option></select></label>
+        <label>Option premium stop (%) <input id="lab-premium-stop" type="number" value="25" min="5" max="95" /></label>
+        <label>Profit target (R) <input id="lab-premium-r" type="number" step="0.1" value="1" min="0.1" max="10" /></label>
+       </div>
+       <div class="lab-check-row"><label><input id="lab-auto-quotes" type="checkbox" /> Fetch historical option quotes from Massive (requires separate entitlement)</label></div>
+       <div class="lab-actions"><button class="research-button secondary" id="lab-import-signals">Import Pine signal CSV</button><input id="lab-signals-file" type="file" accept=".csv" hidden/><button class="research-button secondary" id="lab-import-quotes">Import options NBBO CSV</button><input id="lab-quotes-file" type="file" accept=".csv" hidden/><button class="research-button" id="lab-run-options">Run 0DTE replay</button></div>
+       <div class="lab-actions lab-links"><a href="/lab/api/signals/template.csv">Signal template</a><a href="/lab/api/options/quotes/template.csv">Option quote template</a></div>
+       <div id="lab-options-status" class="lab-message" role="status">Historical options require valid 0DTE bid/ask quotes at entry and exit. No quotes means no fabricated fills.</div>
+      </div>
+      <div class="section-head"><div><h2>4 · Recorded backtests</h2><p>Saved automatically in the integrated backtesting database</p></div></div>
+      <div class="panel panelbody">
+       <div class="lab-grid">
+        <label>Saved run <select id="lab-run-select"><option value="">No runs yet</option></select></label>
+        <label>CSV algorithm <select id="lab-algorithm"><option>KAIROS_V5</option></select></label>
+       </div>
+       <div class="lab-actions"><button class="research-button secondary" id="lab-import-trades">Import TradingView Strategy Tester CSV</button><input id="lab-trades-file" type="file" accept=".csv" hidden/><button class="research-button secondary" id="lab-refresh-runs">Refresh saved runs</button><a href="/lab/api/trades-template.csv">Trade CSV template</a></div>
+       <div id="lab-run-status" class="lab-message" role="status">Select a backtest to view its equity curve and completed trades.</div>
+       <div id="lab-metrics" class="lab-metrics"></div>
+       <div id="lab-equity" class="lab-equity"></div>
+       <div class="scroll lab-trades-scroll"><table><thead><tr><th>Exit time</th><th>Side</th><th>Contract</th><th>Entry</th><th>Exit</th><th>P&amp;L (USD)</th></tr></thead><tbody id="lab-trades-rows"></tbody></table></div>
+      </div>
+      <details class="lab-advanced"><summary>Advanced original Quant Terminal interface (embedded here, same website)</summary><p class="tiny">The complete v0.2 research interface and original controls are also available below. It runs in the same FastAPI process; no second server or port 8000 needed.</p><iframe title="Original AION Quant Terminal research interface" src="/lab/" loading="lazy" referrerpolicy="same-origin"></iframe></details>
+      <p class="disclaimer">Research only. Core V5 port omits LC/ML/HMM entry gates and is not Pine-parity-verified. Stock-bar fills are not option fills; options quote replay requires genuine historical bid/ask quotes. No brokerage order submission is present.</p>
+    </div>

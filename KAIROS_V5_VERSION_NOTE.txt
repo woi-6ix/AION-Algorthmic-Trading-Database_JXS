@@ -1,0 +1,5 @@
+AION KAIROS V5 signal simulator: only KAIROS_V5 event payloads accepted.
+Source: KAIROS_LC_Swing_Engine_V5_JXS_918.pine in KAIROS GitHub.
+This server does NOT run Pine strategy logic or send orders to Webull.
+Update .env to AION_ALLOWED_STRATEGY=KAIROS_V5.
+Standalone V5 testing data: aion_kairos_v5_signals.sqlite3.

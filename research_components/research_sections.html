@@ -1,0 +1,29 @@
+    <!-- AION RESEARCH SUITE v1: read-only. Existing trading/signal tabs remain unchanged. -->
+    <div id="screener" class="section">
+      <div class="section-head"><div><h2>Stock & ETF Screener</h2><p>Editable watchlist · daily close indicators · research only</p></div><span class="chip">NOT OPTIONS EXECUTION DATA</span></div>
+      <div class="panel research-toolbar">
+        <label for="scan-tickers">Symbols (comma separated, up to 12)</label>
+        <div class="research-controls"><input id="scan-tickers" value="SPY,QQQ,IWM,DIA,AAPL,MSFT,NVDA,TSLA,AMZN,META" spellcheck="false" autocapitalize="characters" aria-label="Stock and ETF tickers"/><select id="scan-filter" aria-label="Trend filter"><option value="ALL">All trends</option><option value="BULLISH">Bullish</option><option value="BEARISH">Bearish</option><option value="MIXED">Mixed</option></select><button class="research-button" id="scan-go">Scan watchlist</button></div>
+        <div class="research-status" id="scan-status">Select Scan watchlist to retrieve market research data.</div>
+      </div>
+      <div class="panel" style="margin-top:15px"><div class="scroll"><table><thead><tr><th>Symbol</th><th>Last close</th><th>1D %</th><th>RSI(14)</th><th>Rel. vol</th><th>20D vol %</th><th>EMA trend</th><th>As of</th></tr></thead><tbody id="scan-rows"></tbody></table></div><div class="empty" id="scan-empty">No market scan loaded.</div></div>
+      <div class="section-head"><div><h2>Price & trend</h2><p>Click a screener symbol to inspect its daily closing prices</p></div></div>
+      <div class="panel panelbody"><div class="research-row"><strong id="scan-chart-title">SPY — daily history</strong><span class="chip" id="scan-chart-asof">—</span></div><div id="scan-chart" class="research-chart">Choose a symbol to load its chart.</div><div id="scan-chart-summary" class="subtle"></div></div>
+      <p class="disclaimer">Data provider: unofficial yfinance daily historical bars for personal research/testing only. Not a full-market screener, not guaranteed realtime, not licensed for AION Quant Labs commercial execution.</p>
+    </div>
+    <div id="sentiment" class="section">
+      <div class="section-head"><div><h2>News & Headline Sentiment</h2><p>Google News RSS search + VADER lexical scoring; not a trained finance model</p></div></div>
+      <div class="panel research-toolbar"><label for="news-symbol">Research ticker</label><div class="research-controls"><input id="news-symbol" value="SPY" maxlength="10" autocapitalize="characters"/><button class="research-button" id="news-go">Analyze headlines</button></div><div class="research-status" id="news-status">Load headlines to view sentiment.</div></div>
+      <div class="research-summary" id="news-summary"></div><div class="panel" style="margin-top:15px"><div id="news-list" class="news-list"><div class="empty">No headlines loaded.</div></div></div>
+      <p class="disclaimer">Headline sentiment is keyword-dependent and may be inaccurate, stale or unrelated to the underlying ticker. The model does not read article bodies or replicate your original HG sentiment analyzer.</p>
+    </div>
+    <div id="regimes" class="section">
+      <div class="section-head"><div><h2>Market Regime Lab</h2><p>HMM · GARCH · STORM-style proxy using daily closes</p></div></div>
+      <div class="panel research-toolbar"><label for="regime-symbol">Ticker</label><div class="research-controls"><input id="regime-symbol" value="SPY" maxlength="10" autocapitalize="characters"/><button class="research-button" id="regime-go">Analyze regime</button></div><div class="research-status" id="regime-status">Install advanced model dependencies for HMM and GARCH calculations.</div></div>
+      <div class="research-card-grid" id="regime-cards" style="margin-top:15px"><div class="metric"><div class="metlabel">Hidden Markov Model</div><div class="metvalue">—</div><div class="metfoot">Awaiting data</div></div><div class="metric"><div class="metlabel">GARCH(1,1)</div><div class="metvalue">—</div><div class="metfoot">Awaiting data</div></div><div class="metric"><div class="metlabel">STORM-style proxy</div><div class="metvalue">—</div><div class="metfoot">Awaiting data</div></div></div>
+      <div class="notice"><span><strong>Model transparency:</strong> HMM and GARCH are independently fitted research models when dependencies are installed. STORM is a momentum/volatility heuristic, not the original proprietary STORM algorithm. These daily regimes do not drive KAIROS V5 trades.</span></div>
+    </div>
+    <div id="backtests" class="section">
+      <div class="section-head"><div><h2>Backtesting Terminal</h2><p>Continue using your original AION Quant Terminal algorithms on port 8000</p></div></div>
+      <div class="panel panelbody"><div class="research-row"><div><h2 style="margin:0">Original AION Quant Terminal</h2><p class="subtitle">Existing stock/0DTE backtesting app — preserved, not replaced</p></div><span id="terminal-badge" class="pill warn">Checking</span></div><p id="terminal-note" style="color:var(--muted)">Checking the local terminal...</p><div class="research-controls" style="margin-top:18px"><a id="terminal-link" class="research-button research-link" href="#" target="_blank" rel="noopener noreferrer">Open original backtester</a><button id="terminal-recheck" class="research-button secondary">Recheck availability</button></div><p class="disclaimer">For phone access, run a separate private Tailscale Serve mapping from HTTPS port 8443 to your original server on localhost:8000. The original strategies, data providers and backtesting logic remain in the original app; they are not silently duplicated into this monitor.</p></div>
+    </div>

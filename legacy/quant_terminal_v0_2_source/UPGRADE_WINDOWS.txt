@@ -1,0 +1,31 @@
+AION QUANT TERMINAL v0.2 — WINDOWS UPGRADE
+
+IF YOU ALREADY HAVE AION WORKING:
+
+1. Press Ctrl+C in your currently running AION terminal.
+2. Extract AION_Quant_Terminal_v0_2_Stock_0DTE.zip to a temporary folder.
+3. Open the extracted aion-quant-terminal folder.
+4. Copy the program files and static folder into your EXISTING
+   aion-quant-terminal app folder, replacing older program files.
+5. KEEP your existing data folder and data/aion.sqlite3!
+   This ZIP deliberately does not contain a database.
+6. Double-click start_windows.bat again.
+7. Open http://127.0.0.1:8000
+
+OPTIONAL PROVIDER:
+
+Copy aion-local.env.example to aion-local.env, add your OWN Massive
+API key, restart Windows launcher. Historical option NBBO requires its
+own subscription entitlement. Do not share or upload your secret.
+
+NO API KEY:
+
+Stocks: choose Yahoo Finance or import stock OHLCV CSV.
+0DTE options: import genuine historical option bid/ask quote CSV; 
+or the app will report no executable quote pairs (not fabricated P&L).
+
+WARNING: KAIROS V5 CORE PORT is NOT a complete Pine replication.
+Third-party LC/HMM regime filters remain unported, while downloaded
+Pine trades and exact Pine event timestamps can be imported.
+
+If startup fails, send aion-startup.log. No port or browser change needed.
