@@ -92,6 +92,10 @@ When validating options data, `.\.venv\Scripts\python.exe .\aion_alpaca_paper_al
 - Verified offline and locally in the development environment; *not* remotely deployed or validated against the user's running Windows copy in this GitHub import.
 - Known gaps: options historical chart fix not yet verified against your account, free indicative option quotes are not reliable executable OPRA, limit exits may not fill, temporary Cloudflare tunnels are fragile, order/position reconciliation still requires supervised paper testing, and the laptop needs to remain running.
 
+### November 5, 2026 — Alpaca options-chart preflight
+
+If historical SPY options bars return `Alpaca DATA HTTP 400`, use the **read-only** [`aion_option_preflight.py`](aion_option_preflight.py) and the [preflight guide](README_AION_PAPER_PREFLIGHT.md) to diagnose the historical quote entitlement and GET parameters without arming the paper bot. The ZIP is archived in [`patches/release_archives/`](patches/release_archives/). **No new brokerage orders** are placed by this diagnostic.
+
 ## License
 
 This repository is covered by its existing [MIT License](LICENSE), except where separate third-party terms apply.
