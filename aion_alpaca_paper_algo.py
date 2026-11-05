@@ -40,7 +40,8 @@ KILL = ROOT / 'AION_PAPER_KILL_SWITCH.txt'
 LOCK = ROOT / '.aion_alpaca_paper_worker.lock'
 OCC = re.compile(r'^SPY\d{6}[CP]\d{8}$')
 API_TIMEOUT = 7
-MAX_COST = Decimal('300')
+MAX_COST = Decimal('2500')  # Maximum total debit for one KAIROS V5 entry, not per contract
+MAX_CONTRACTS = 25  # Additional safety cap for very low priced 0DTE contracts
 MAX_SPREAD = Decimal('0.40')
 MAX_SPREAD_FRACTION = Decimal('0.35')
 QUOTE_AGE = timedelta(seconds=120)
@@ -220,6 +221,17 @@ def init_db():
            state TEXT NOT NULL, broker_order_id TEXT, filled_qty TEXT NOT NULL DEFAULT '0',
            fill_price TEXT, filled_at TEXT, journaled INTEGER NOT NULL DEFAULT 0,
            last_update TEXT)''')
+        # Backward-compatible incremental fill accounting for existing $300/1-contract DBs.
+        columns={r[1] for r in db.execute('PRAGMA table_info(paper_orders)')}
+        if 'journaled_qty' not in columns:
+            db.execute('ALTER TABLE paper_orders ADD COLUMN journaled_qty INTEGER NOT NULL DEFAULT 0')
+            db.execute('UPDATE paper_orders SET journaled_qty=CAST(filled_qty AS INTEGER) WHERE journaled=1')
+        if 'journaled_notional' not in columns:
+            db.execute("ALTER TABLE paper_orders ADD COLUMN journaled_notional TEXT NOT NULL DEFAULT '0'")
+            db.execute('''UPDATE paper_orders SET journaled_notional=CAST(filled_qty AS REAL)*CAST(fill_price AS REAL)
+                          WHERE journaled=1 AND fill_price IS NOT NULL''')
+        if 'cancel_requested_at' not in columns:
+            db.execute('ALTER TABLE paper_orders ADD COLUMN cancel_requested_at TEXT')
 
 
 def get_cfg(k, default=None):
@@ -243,7 +255,8 @@ def market_window(signal='ENTRY', current=None):
     n=(current or now_utc()).astimezone(NY)
     if n.weekday() >= 5: return False
     if signal=='ENTRY': return time(9,35) <= n.time() < time(14,30)
-    return time(9,35) <= n.time() < time(15,0)
+    # Preserve a brief grace window for KAIROS's 15:00 ET session-cutoff fill alert.
+    return time(9,35) <= n.time() < time(15,2)
 
 
 def quote_ok(snap, current=None):
@@ -305,19 +318,52 @@ def select_contract(api, direction, current=None):
             'expiry':expiry,'strike':c['strike_price'],'right':right}
 
 
+def contract_quantity(price, cash):
+    """Long options: integer quantity whose MAXIMUM premium debit never exceeds $2,500."""
+    limit = amount(price, 'entry option limit')
+    available = amount(cash, 'paper cash')
+    if limit < Decimal('0.01') or available <= 0:
+        raise RuntimeError('No positive entry premium or paper cash')
+    qty = int((min(MAX_COST, available) / (limit * 100)).to_integral_value(rounding=ROUND_DOWN))
+    return min(qty, MAX_CONTRACTS)
+
+
+def local_open_inventory():
+    """Net broker-confirmed fills, including partial fills, not requested order quantities."""
+    net = {}
+    for row in orders_db():
+        n = amount(row['filled_qty'] or 0, 'filled quantity')
+        if n != n.to_integral_value() or n < 0 or n > int(row['qty']):
+            raise RuntimeError('Local order quantity discrepancy; manual reconciliation')
+        symbol = row['option_symbol']
+        net[symbol] = net.get(symbol, 0) + (int(n) if row['action']=='BUY_TO_OPEN' else -int(n))
+    if any(x < 0 for x in net.values()):
+        raise RuntimeError('More options sold than bought according to AION; manual reconciliation')
+    active = {sym:q for sym,q in net.items() if q}
+    if len(active)>1:
+        raise RuntimeError('Multiple managed SPY option contracts active; manual reconciliation')
+    return active
+
+
 def owned_position(api, managed_symbol=None):
     positions=api.positions()
     spy=[p for p in positions if str(p.get('symbol','')).startswith('SPY') and
          (p.get('asset_class')=='us_option' or OCC.fullmatch(str(p.get('symbol','')))) and
          amount(p.get('qty',0))!=0]
-    if not spy: return None
+    expected=local_open_inventory()
+    if not spy:
+        if expected:
+            raise RuntimeError('AION shows unclosed fills but Alpaca has no SPY position; manual reconciliation')
+        return None
     if len(spy)!=1:
         raise RuntimeError('Multiple SPY options positions exist; halt worker for manual inspection')
     p=spy[0]
-    if not managed_symbol or p['symbol']!=managed_symbol:
+    if not managed_symbol or p['symbol']!=managed_symbol or p['symbol'] not in expected:
         raise RuntimeError('Unmanaged/manual SPY option position detected; refusing algorithmic order')
-    if amount(p.get('qty'))!=1 or p.get('side')!='long':
-        raise RuntimeError('Position quantity/side unexpected; manual reconciliation required')
+    expected_qty=expected[p['symbol']]
+    q=amount(p.get('qty'))
+    if q!=q.to_integral_value() or int(q)!=expected_qty or p.get('side')!='long':
+        raise RuntimeError('Broker options quantity/side differs from verified AION fills')
     return p
 
 
@@ -336,12 +382,8 @@ def orders_db():
 
 
 def last_owned_symbol():
-    rows=orders_db()
-    entries=[r for r in rows if r['action']=='BUY_TO_OPEN' and r['state']=='filled']
-    if not entries:return None
-    entry=entries[0]
-    exits=[r for r in rows if r['action']=='SELL_TO_CLOSE' and r['option_symbol']==entry['option_symbol'] and r['state']=='filled' and r['submitted_at']>=entry['submitted_at']]
-    return None if exits else entry['option_symbol']
+    inventory=local_open_inventory()
+    return next(iter(inventory),None)
 
 
 def ensure_no_unsettled():
@@ -354,7 +396,7 @@ def unique_client_id(event_id, action):
     return 'aionpv5-' + hashlib.sha256((event_id+'|'+action).encode()).hexdigest()[:29]
 
 
-def submit_intent(api, event_id, action, symbol, limit, current=None):
+def submit_intent(api, event_id, action, symbol, limit, *, qty, current=None):
     if not armed(): raise RuntimeError('Not armed or kill switch exists')
     if not market_window('ENTRY' if action=='BUY_TO_OPEN' else 'EXIT',current):
         raise RuntimeError('Order rejected by ET time window')
@@ -364,23 +406,27 @@ def submit_intent(api, event_id, action, symbol, limit, current=None):
     price=amount(limit,'limit price')
     if price<Decimal('0.01') or price>Decimal('50') or price.as_tuple().exponent < -2:
         raise RuntimeError('Invalid option limit')
-    if action=='BUY_TO_OPEN' and price*100>MAX_COST:
-        raise RuntimeError('Paper premium exceeds $300 risk cap')
+    if action not in ('BUY_TO_OPEN','SELL_TO_CLOSE'):
+        raise RuntimeError('Only long options buy-to-open/sell-to-close allowed')
+    if not isinstance(qty,int) or isinstance(qty,bool) or not 1<=qty<=MAX_CONTRACTS:
+        raise RuntimeError('Invalid paper options contract quantity')
+    if action=='BUY_TO_OPEN' and price*100*qty>MAX_COST:
+        raise RuntimeError('Paper entry premium exceeds $2,500 debit cap')
     a=broker_account_check(api,get_cfg('paper_account_id'))
     if get_cfg('paper_account_id') is None:raise RuntimeError('Paper account not bound. Run arm first.')
-    if action=='BUY_TO_OPEN' and amount(a.get('cash',0)) < price*100:
+    if action=='BUY_TO_OPEN' and amount(a.get('cash',0)) < price*100*qty:
         raise RuntimeError('Insufficient paper cash')
     cid=unique_client_id(event_id,action)
     init_db()
     with sqlite3.connect(STATE, timeout=10) as db:
         try:
             db.execute('''INSERT INTO paper_orders (client_order_id,event_id,submitted_at,action,option_symbol,qty,state)
-                          VALUES(?,?,?,?,?,1,'UNKNOWN_SUBMISSION')''',
-                       (cid,event_id,(current or now_utc()).isoformat(),action,symbol))
+                          VALUES(?,?,?,?,?,?,'UNKNOWN_SUBMISSION')''',
+                       (cid,event_id,(current or now_utc()).isoformat(),action,symbol,qty))
         except sqlite3.IntegrityError:
             raise RuntimeError('Duplicate attempt: client order ID already reserved') from None
     # Broker outcome may be unknown after a timeout; NEVER auto-resubmit.
-    body={'symbol':symbol,'qty':'1','side':'buy' if action=='BUY_TO_OPEN' else 'sell',
+    body={'symbol':symbol,'qty':str(qty),'side':'buy' if action=='BUY_TO_OPEN' else 'sell',
           'type':'limit','time_in_force':'day','limit_price':str(price),
           'position_intent':'buy_to_open' if action=='BUY_TO_OPEN' else 'sell_to_close',
           'client_order_id':cid,'extended_hours':False}
@@ -397,36 +443,85 @@ def submit_intent(api, event_id, action, symbol, limit, current=None):
 
 
 def sync_orders(api):
+    """Reconcile cumulative Alpaca fills incrementally; safely journal partial quantities.
+
+    Broker filled_avg_price is cumulative, so infer the delta's average from
+    cumulative notional minus previously journaled notional. Both SQLite DBs
+    use deterministic idempotency keys to tolerate interruption between writes.
+    """
     from aion_execution_journal import record_fill
     changed=[]
     for r in orders_db():
-        if r['state'] in {'rejected','canceled','expired'} and not r['filled_at']:
+        # A submission response may say 'filled' before cumulative fill data is
+        # persisted locally; always requery until its requested qty is journaled.
+        fully_journaled=int(r.get('journaled_qty',0))==int(amount(r['filled_qty']))
+        if fully_journaled and (r['state'] in {'canceled','expired','rejected','replaced'} or
+                                (r['state']=='filled' and int(r['filled_qty'])==int(r['qty']))):
             continue
         result=api.order_by_client_id(r['client_order_id'])
         if result is None:
-            changed.append((r['client_order_id'],'NOT_FOUND_CHECK_MANUALLY'))
-            continue
+            raise RuntimeError('Alpaca order absent for reserved client id; manually reconcile before continuing')
         if result.get('client_order_id')!=r['client_order_id'] or result.get('symbol')!=r['option_symbol']:
             raise RuntimeError('Broker order reconciliation mismatch; stop processing')
         state=result.get('status','unknown')
-        filled_qty=amount(result.get('filled_qty') or 0)
+        filled=amount(result.get('filled_qty') or 0)
+        if filled!=filled.to_integral_value() or not 0<=filled<=r['qty']:
+            raise RuntimeError('Unexpected fractional/overfilled option contracts')
+        qty=int(filled)
+        previous=int(r.get('journaled_qty',0))
+        if qty<previous:
+            raise RuntimeError('Alpaca cumulative filled quantity decreased unexpectedly')
         px=result.get('filled_avg_price')
-        ts=result.get('filled_at')
-        with sqlite3.connect(STATE) as db:
-            db.execute('''UPDATE paper_orders SET state=?, broker_order_id=?,filled_qty=?,fill_price=?,
-                         filled_at=?,last_update=? WHERE client_order_id=?''',
-                       (state,result.get('id'),str(filled_qty),px,ts,now_utc().isoformat(),r['client_order_id']))
-        if filled_qty==1 and px and ts:
-            # Journal only confirmed full fills; source must never be DEMO.
-            journaled=record_fill(fill_id='alpaca-paper-'+r['client_order_id'],filled_at=ts,
-                option_symbol=r['option_symbol'].replace('SPY','SPY   ',1),mode='PAPER',action=r['action'],contracts=1,
-                fill_price=float(px), fees_usd=0,source='ALPACA_PAPER_API_FEES_NOT_CONFIRMED',
-                broker_order_id=result.get('id') or '')
+        stamp=result.get('filled_at') or result.get('updated_at')
+        if qty>previous:
+            if not px or not stamp:
+                raise RuntimeError('Broker reports options fill without price/timestamp; manual review')
+            avg=amount(px,'broker cumulative fill price')
+            if avg<=0:raise RuntimeError('Invalid broker cumulative options fill price')
+            total_notional=avg*qty
+            old_notional=amount(r.get('journaled_notional',0))
+            increment=qty-previous
+            delta_avg=(total_notional-old_notional)/increment
+            if delta_avg<=0:raise RuntimeError('Invalid incremental broker fill price')
+            # This ID identifies a cumulative broker quantity milestone. Repeat
+            # after crash -> INSERT OR IGNORE, not duplicate execution journal.
+            record_fill(fill_id=f'alpaca-paper-{r["client_order_id"]}-cum{qty}',filled_at=stamp,
+                option_symbol=r['option_symbol'].replace('SPY','SPY   ',1),
+                mode='PAPER',action=r['action'],contracts=increment,
+                fill_price=float(delta_avg), fees_usd=0,
+                source='ALPACA_PAPER_API_FEES_NOT_CONFIRMED',broker_order_id=result.get('id') or '')
             with sqlite3.connect(STATE) as db:
-                db.execute('UPDATE paper_orders SET journaled=1 WHERE client_order_id=?',(r['client_order_id'],))
-            changed.append((r['client_order_id'],state,'journaled' if journaled else 'already_journaled'))
-        else:changed.append((r['client_order_id'],state))
+                db.execute("UPDATE paper_orders SET journaled_qty=?, journaled_notional=?, journaled=1 WHERE client_order_id=?", (qty,str(total_notional),r['client_order_id']))
+        with sqlite3.connect(STATE) as db:
+            db.execute("UPDATE paper_orders SET state=?, broker_order_id=?,filled_qty=?,fill_price=?, filled_at=?,last_update=? WHERE client_order_id=?",
+                       (state,result.get('id'),str(qty),px,stamp,now_utc().isoformat(),r['client_order_id']))
+        changed.append((r['client_order_id'],state,qty))
     return changed
+
+
+def monitor_pending_order_timeouts(api):
+    """Avoid stale DAY entries and surface unfilled KAIROS exits promptly."""
+    outcomes=[]
+    for r in orders_db():
+        if r['state'] in TERMINAL:continue
+        age=now_utc()-dt(r['submitted_at'])
+        if r['action']=='SELL_TO_CLOSE':
+            if age>timedelta(seconds=30):
+                raise RuntimeError('KAIROS SELL_TO_CLOSE still open after 30s; paper exit needs manual review')
+            continue
+        if r.get('cancel_requested_at'):
+            if now_utc()-dt(r['cancel_requested_at'])>timedelta(seconds=30):
+                raise RuntimeError('PAPER entry cancellation not confirmed after 30s; manual review')
+            continue
+        if age>timedelta(seconds=30):
+            if not r['broker_order_id']:
+                raise RuntimeError('Stale PAPER entry with unknown broker identity; manual review')
+            with sqlite3.connect(STATE) as db:
+                db.execute('UPDATE paper_orders SET cancel_requested_at=? WHERE client_order_id=?',
+                           (now_utc().isoformat(),r['client_order_id']))
+            api.cancel(r['broker_order_id'])
+            outcomes.append('STALE_ENTRY_CANCEL_REQUESTED '+r['option_symbol'])
+    return outcomes
 
 
 def accepted_events():
@@ -438,7 +533,7 @@ def accepted_events():
     try:
         con.row_factory=sqlite3.Row
         rows=con.execute('''SELECT event_id,received_at,signal,result,strategy,symbol FROM events
-                          WHERE received_at>? AND result IN ('SIGNAL_LOGGED','EXIT_INTENT_LOGGED')
+                          WHERE received_at>? AND result IN ('SIGNAL_LOGGED','EXIT_INTENT_LOGGED','REVERSAL_INTENT_LOGGED')
                           ORDER BY received_at ASC LIMIT 200''',(start,)).fetchall()
         return [dict(x) for x in rows]
     finally:con.close()
@@ -455,6 +550,68 @@ def record_signal(e,outcome,note=''):
                    (e['event_id'],e['received_at'],e['signal'],outcome,note[:250]))
 
 
+def signal_right(signal):
+    return 'C' if signal=='BUY_CALL' else 'P'
+
+
+def clear_pending_reversal():
+    put_cfg('pending_reversal','')
+
+
+def pending_reversal():
+    raw=get_cfg('pending_reversal','')
+    return json.loads(raw) if raw else None
+
+
+def pending_exit():
+    raw=get_cfg('pending_exit','')
+    return json.loads(raw) if raw else None
+
+
+def request_strategy_exit(api,event_id,reason):
+    """Durably queue a KAIROS exit, including if an entry is still pending.
+
+    No second order can be placed until Alpaca confirms any entry cancellation;
+    this prevents opening a new contract before the existing one is flattened.
+    """
+    if pending_exit():return 'EXIT_ALREADY_QUEUED'
+    put_cfg('pending_exit',json.dumps({'event_id':event_id,'reason':reason}))
+    return process_pending_exit(api)
+
+
+def process_pending_exit(api):
+    e=pending_exit()
+    if not e:return None
+    if not armed():return 'EXIT_PENDING_DISARMED_CHECK_BROKER'
+    if not market_window('EXIT') or not api.clock().get('is_open'):
+        return 'EXIT_PENDING_OUTSIDE_SESSION_CHECK_BROKER'
+    rows=orders_db()
+    exits=[r for r in rows if r['action']=='SELL_TO_CLOSE' and r['state'] not in TERMINAL]
+    if exits:
+        if any(now_utc()-dt(r['submitted_at'])>timedelta(seconds=30) for r in exits):
+            raise RuntimeError('Paper exit unfilled for 30s; operator must inspect/cancel/close in Alpaca')
+        return 'EXIT_WAITING_BROKER_CLOSE_FILL'
+    entries=[r for r in rows if r['action']=='BUY_TO_OPEN' and r['state'] not in TERMINAL]
+    if entries:
+        for r in entries:
+            if not r['broker_order_id']:
+                raise RuntimeError('Unconfirmed entry order cannot be canceled safely; inspect Alpaca')
+            if r.get('cancel_requested_at'):
+                if now_utc()-dt(r['cancel_requested_at'])>timedelta(seconds=30):
+                    raise RuntimeError('Entry cancellation not confirmed within 30s; manually inspect broker')
+                continue
+            # Reserve cancel request BEFORE transmission; never issue a second
+            # destructive request after an ambiguous network timeout.
+            with sqlite3.connect(STATE) as db:
+                db.execute('UPDATE paper_orders SET cancel_requested_at=? WHERE client_order_id=?',
+                           (now_utc().isoformat(),r['client_order_id']))
+            api.cancel(r['broker_order_id'])  # Only a bot-owned Alpaca PAPER order.
+        return 'EXIT_WAITING_BROKER_ENTRY_CANCEL'
+    result=exit_order(api,e['event_id'],e['reason'])
+    put_cfg('pending_exit','')
+    return result
+
+
 def exit_order(api, event_id, reason):
     pending_orders(api)
     ensure_no_unsettled()
@@ -464,10 +621,10 @@ def exit_order(api, event_id, reason):
     snap=api.snapshot([sym]).get(sym)
     if not snap:raise RuntimeError('No option quote for exit; check broker manually')
     bid,ask,_=quote_ok(snap)
-    # A marketable limit at/below indicated bid; never unlimited market order.
     price=max(Decimal('.01'),(bid-Decimal('.02')).quantize(Decimal('.01'),rounding=ROUND_DOWN))
-    result=submit_intent(api,event_id,'SELL_TO_CLOSE',sym,price)
-    return 'EXIT_ORDER_'+result.get('status','submitted')+' ('+reason+')'
+    q=int(amount(pos['qty']))
+    result=submit_intent(api,event_id,'SELL_TO_CLOSE',sym,price,qty=q)
+    return f"EXIT_ORDER_{result.get('status','submitted')} {q}x {sym} ({reason})"
 
 
 def entry_order(api, e):
@@ -477,11 +634,32 @@ def entry_order(api, e):
     pos=owned_position(api,sym)
     if pos:return 'SKIP_POSITION_OPEN'
     item=select_contract(api,e['signal'])
-    ask=item['ask']
-    # Limit 1 cent above indicative ask; maximum premium cap remains hard.
-    limit=(ask+Decimal('.01')).quantize(Decimal('.01'),rounding=ROUND_UP)
-    result=submit_intent(api,e['event_id'],'BUY_TO_OPEN',item['symbol'],limit)
-    return f"ENTRY_{result.get('status','submitted')} {item['symbol']} @ {limit} (indicative)"
+    limit=(item['ask']+Decimal('.01')).quantize(Decimal('.01'),rounding=ROUND_UP)
+    a=broker_account_check(api,get_cfg('paper_account_id'))
+    qty=contract_quantity(limit,a.get('cash','0'))
+    if not qty:
+        raise RuntimeError('Near-ATM option is too expensive for $2,500 paper premium budget')
+    result=submit_intent(api,e['event_id'],'BUY_TO_OPEN',item['symbol'],limit,qty=qty)
+    return f"ENTRY_{result.get('status','submitted')} {qty}x {item['symbol']} @ {limit} (max ${limit*qty*100}, indicative)"
+
+
+def finish_pending_reversal(api):
+    pending=pending_reversal()
+    if not pending:return None
+    if not armed():return 'REVERSAL_DISARMED'
+    if pending_exit():return 'REVERSAL_WAITING_FOR_STRATEGY_EXIT'
+    if not market_window('ENTRY') or now_utc()-dt(pending['received_at'])>SIGNAL_AGE:
+        clear_pending_reversal()
+        return 'REVERSAL_ENTRY_SKIPPED_STALE_OR_CUTOFF'
+    if any(r['state'] not in TERMINAL for r in orders_db()):
+        return 'REVERSAL_WAITING_FOR_EXIT_FILL'
+    pending_orders(api)
+    sym=last_owned_symbol()
+    if owned_position(api,sym):return 'REVERSAL_WAITING_FOR_EXIT_FILL'
+    e={'event_id':pending['event_id']+'-reversal-open','signal':pending['signal']}
+    result=entry_order(api,e)
+    clear_pending_reversal()
+    return 'REVERSAL_'+result
 
 
 def process_events(api):
@@ -491,15 +669,40 @@ def process_events(api):
         if e['strategy']!='KAIROS_V5' or e['symbol']!='SPY':
             record_signal(e,'REJECTED_SOURCE');continue
         lag=now_utc()-dt(e['received_at'])
-        if lag> SIGNAL_AGE or lag<timedelta(seconds=-5):
-            record_signal(e,'STALE_SKIP');results.append((e['event_id'],'STALE_SKIP'));continue
+        if lag>SIGNAL_AGE or lag<timedelta(seconds=-5):
+            record_signal(e,'STALE_SKIP')
+            results.append((e['event_id'],'STALE_SKIP'))
+            if e['signal']=='EXIT' and last_owned_symbol():
+                raise RuntimeError('Missed/stale KAIROS EXIT while paper position open; inspect broker immediately')
+            continue
         if not armed():break
         if not market_window('ENTRY' if e['signal'].startswith('BUY') else 'EXIT'):
             record_signal(e,'SESSION_SKIP');results.append((e['event_id'],'SESSION_SKIP'));continue
+        if pending_exit() and e['signal'].startswith('BUY'):
+            record_signal(e,'SKIPPED_PENDING_EXIT')
+            results.append((e['event_id'],'SKIPPED_PENDING_EXIT'))
+            continue
         try:
-            outcome=entry_order(api,e) if e['signal'].startswith('BUY') else exit_order(api,e['event_id'],'KAIROS_EXIT')
+            if e['signal']=='EXIT':
+                clear_pending_reversal()
+                outcome=request_strategy_exit(api,e['event_id'],'KAIROS_V5_EXIT')
+            else:
+                sym=last_owned_symbol()
+                position=owned_position(api,sym)
+                pending_other_side=any(r['action']=='BUY_TO_OPEN' and r['state'] not in TERMINAL and
+                                       r['option_symbol'][9]!=signal_right(e['signal'])
+                                       for r in orders_db())
+                if (position and sym[9]!=signal_right(e['signal'])) or pending_other_side:
+                    # Pine can flip directly even if the previous PAPER buy is
+                    # unfilled/partially-filled. Cancel its remainder, flatten
+                    # confirmed fills, then enter the new option if still fresh.
+                    put_cfg('pending_reversal',json.dumps({
+                        'event_id':e['event_id'],'signal':e['signal'],
+                        'received_at':e['received_at']}))
+                    outcome=request_strategy_exit(api,e['event_id']+'-reversal-close','KAIROS_V5_REVERSAL')
+                else:
+                    outcome=entry_order(api,e)
         except RuntimeError as exc:
-            # If a request may have reached the broker, never auto-retry.
             record_signal(e,'HALTED_ERROR',str(exc))
             KILL.write_text('Worker halted. Review broker and DB. Reason: '+str(exc),encoding='utf-8')
             results.append((e['event_id'],'HALTED_ERROR '+str(exc)))
@@ -510,31 +713,19 @@ def process_events(api):
 
 
 def risk_exit(api):
+    """No independent premium TP/SL: KAIROS V5 exits control this strategy.
+
+    The 14:45 ET deadline is an emergency attempt to avoid holding expiring
+    contracts and is intentionally NOT a normal strategy exit.
+    """
     if not armed() or not market_window('EXIT'):return None
     sym=last_owned_symbol()
     if not sym:return None
-    ensure_no_unsettled()
-    pos=owned_position(api,sym)
-    if not pos:return None
-    today=now_utc().astimezone(NY)
-    # Never carry 0DTE paper options beyond the configured cutoff.
-    if today.time()>=time(14,45):
-        return exit_order(api,'cutoff-'+today.date().isoformat(),'AUTO_CUTOFF_14:45')
-    rows=orders_db()
-    entry=next((r for r in rows if r['option_symbol']==sym and r['action']=='BUY_TO_OPEN' and r['state']=='filled'),None)
-    if not entry or not entry['fill_price']:return None
-    snap=api.snapshot([sym]).get(sym)
-    if not snap:return None
-    bid,_,_=quote_ok(snap)
-    paid=amount(entry['fill_price'])
-    # Explicit, adjustable paper-only premium rules (NOT a replication of Pine R exits).
-    tp=amount(os.getenv('AION_PAPER_TAKE_PROFIT_PCT','0.30'))
-    sl=amount(os.getenv('AION_PAPER_STOP_LOSS_PCT','0.25'))
-    if not (Decimal('0.05')<=tp<=Decimal('2') and Decimal('0.05')<=sl<=Decimal('0.9')):
-        raise RuntimeError('Invalid paper TP/SL percentage values')
-    if bid>=paid*(1+tp):return exit_order(api,'tp-'+today.isoformat(),'PAPER_PREMIUM_TP')
-    if bid<=paid*(1-sl):return exit_order(api,'sl-'+today.isoformat(),'PAPER_PREMIUM_STOP')
-    return None
+    if now_utc().astimezone(NY).time()<time(14,45):return None
+    if pending_exit():return 'CUTOFF_EXIT_ALREADY_QUEUED'
+    if any(r['action']=='SELL_TO_CLOSE' and r['state'] not in TERMINAL for r in orders_db()):
+        return 'CUTOFF_EXIT_WAITING_FOR_FILL'
+    return request_strategy_exit(api,'cutoff-'+now_utc().astimezone(NY).date().isoformat(),'FAILSAFE_CUTOFF_14:45')
 
 
 @contextmanager
@@ -570,13 +761,16 @@ def once(api):
         raise RuntimeError('Paper account mismatch')
     # Sync BEFORE reading signals. Avoid new orders when pending/existing.
     changed=sync_orders(api)
+    monitored=monitor_pending_order_timeouts(api)
     if any(r['state']=='UNKNOWN_SUBMISSION' for r in orders_db()):
         raise RuntimeError('Unconfirmed submission; inspect Alpaca Paper and disarm')
+    pending_close=process_pending_exit(api) if pending_exit() else None
     events=process_events(api)
-    # No silent paper broker trades when worker is armed without validated signals.
-    exits=risk_exit(api) if not events else None
+    reversed_order=finish_pending_reversal(api) if not events and not pending_exit() else None
+    # Cutoff is a documented 0DTE emergency exception to signal-only exits.
+    exits=risk_exit(api) if not events and not reversed_order and not pending_exit() else None
     put_cfg('last_heartbeat',now_utc().isoformat())
-    return {'events':events,'reconciled':changed,'risk_exit':exits}
+    return {'events':events,'reconciled':changed,'order_timeouts':monitored,'pending_close':pending_close,'reversal':reversed_order,'risk_exit':exits}
 
 
 def chart_csv(api,symbol):
@@ -609,6 +803,8 @@ def cli():
         return
     if args.command=='disarm':
         put_cfg('armed','false')
+        clear_pending_reversal()
+        put_cfg('pending_exit','')
         KILL.write_text('Disarmed by operator. Check any open paper positions manually.',encoding='utf-8')
         print('DISARMED; open paper orders/positions are NOT canceled or closed automatically.')
         return
@@ -645,12 +841,15 @@ def cli():
             raise RuntimeError('Existing paper account binding differs; refusing re-arm')
         if not sys.stdin.isatty():raise RuntimeError('Arm requires an interactive terminal')
         print('ONLY Alpaca PAPER API can receive orders. Real Webull/Alpaca LIVE are not used.')
-        print('Trading mode must remain SIMULATION. One SPY 0DTE contract, max $300.')
+        print('Trading mode must remain SIMULATION. Max $2,500 TOTAL paper premium per entry, <=25 contracts.')
+        print('Exits: KAIROS V5 exit/reversal signals; 14:45 ET emergency failsafe.')
         print('The worker can submit PAPER orders automatically from FUTURE KAIROS V5 alerts.')
         word=input('Type ARM ALPACA PAPER to enable this automation: ').strip()
         if word!='ARM ALPACA PAPER':raise RuntimeError('Arm declined')
         put_cfg('paper_account_id',a['id'])
         put_cfg('armed_at',now_utc().isoformat())
+        clear_pending_reversal()
+        put_cfg('pending_exit','')
         KILL.unlink(missing_ok=True)
         put_cfg('armed','true')
         print('ARMED: future KAIROS V5 signals only, paper API only. Start with: python aion_alpaca_paper_algo.py run')
@@ -673,7 +872,7 @@ def cli():
                         print('Worker disarmed or kill switch triggered; stopping.')
                         break
                     result=once(api)
-                    if result['events'] or result['risk_exit']:
+                    if result['events'] or result['order_timeouts'] or result['risk_exit'] or (result['reversal'] and not result['reversal'].endswith('WAITING_FOR_EXIT_FILL')) or (result['pending_close'] and not result['pending_close'].startswith('EXIT_WAITING')):
                         print(json.dumps(result),flush=True)
                 except RuntimeError as e:
                     KILL.write_text('Worker halted: '+str(e),encoding='utf-8')

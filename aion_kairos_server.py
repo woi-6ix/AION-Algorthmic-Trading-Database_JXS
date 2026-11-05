@@ -38,10 +38,8 @@ ENFORCE_SESSION = os.getenv("AION_ENFORCE_SESSION", "false").strip().lower() == 
 DB = ROOT / "aion_kairos_v5_signals.sqlite3"
 NY = ZoneInfo("America/New_York")
 
-# No broker credentials are loaded or used by this server.
-# An account ID is present to ensure configuration has been completed, but never sent.
-if not os.getenv("SNAPTRADE_CASH_ACCOUNT_ID"):
-    raise RuntimeError("SNAPTRADE_CASH_ACCOUNT_ID missing from .env")
+# Signal-only process. Does not require or select a brokerage account:
+# the Alpaca PAPER executor binds its own distinct account by immutable ID.
 
 app = FastAPI(title="AION KAIROS V5 — Signal Simulator", docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -120,7 +118,7 @@ def check_time(signal: KairosSignal) -> None:
 @app.get("/health")
 def health():
     return {"service": "AION-KAIROS-V5", "strategy": REQUIRED_STRATEGY, "mode": MODE, "broker_orders_enabled": False,
-            "session_enforced": ENFORCE_SESSION, "selected_account": "CASH (ID hidden)"}
+            "session_enforced": ENFORCE_SESSION, "selected_account": "NONE (signal-only; Alpaca PAPER worker separate)"}
 
 
 @app.post("/webhook")
@@ -152,8 +150,11 @@ def webhook(signal: KairosSignal):
                 next_state = prev
                 outcome, detail = "IGNORED_ALREADY_SIGNALED", "Repeated direction"
             else:
-                next_state = prev
-                outcome, detail = "BLOCKED_OPPOSING_INTENT", "An EXIT must arrive first"
+                # KAIROS V5 strategy.entry() can reverse an open position directly.
+                # This records a NEW desired signal only; the separate Alpaca Paper
+                # worker must SELL_TO_CLOSE and confirm the fill before BUY_TO_OPEN.
+                next_state = direction[signal.signal]
+                outcome, detail = "REVERSAL_INTENT_LOGGED", "Broker worker must close existing option before opposite entry"
         else:
             next_state = "FLAT"
             outcome, detail = ("EXIT_INTENT_LOGGED", "No broker position was closed") if prev != "FLAT" else ("IGNORED_ALREADY_FLAT", "No active signal intent")

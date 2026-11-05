@@ -34,3 +34,7 @@ Existing service ports: 8001 signal engine; 8002 webhook gateway; 8501 dashboard
 ```
 
 Do **not** run `arm` or `run` as part of basic setup. Verify the chart fix, options-data recency, and `disarm` status first.
+
+## KAIROS V5 $2,500 premium paper upgrade (Nov 5, 2026)
+
+For an EXISTING AION-Execution install, never overwrite running paper code. Disarm the old worker, stop the worker and port 8001; check for any open Alpaca PAPER positions. Then follow the backup-first installer steps in [`README_AION_KAIROS_V5_2500_PREMIUM.md`](../README_AION_KAIROS_V5_2500_PREMIUM.md). This installer preserves SQLite files and `.env`. Restart only port 8001 and 8501 (the unchanged gateway on 8002 and Cloudflare can remain running). Re-arm only after read-only verification, and supervise initial paper orders.

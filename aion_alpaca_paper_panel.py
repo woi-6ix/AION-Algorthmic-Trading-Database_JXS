@@ -32,6 +32,7 @@ def status():
         'broker': 'ALPACA PAPER', 'paper_only': True,
         'account_status':a.get('status'), 'options_trading_level':a.get('options_trading_level'),
         'paper_cash':a.get('cash'), 'armed':armed(), 'worker_heartbeat':get_cfg('last_heartbeat'),
+        'max_entry_premium_usd':2500, 'exit_policy':'KAIROS V5 signals + 14:45 ET emergency cutoff',
         'orders':[{k:r[k] for k in ('action','option_symbol','state','filled_qty','fill_price','submitted_at')}
                   for r in orders_db()[:20]],
     }
@@ -104,7 +105,7 @@ a{color:#f2d77c}.notice{color:#f5cb86}.good{color:#8cddb6}.err{color:#ff9e9e}
 #plot{width:100%;height:260px;display:block;background:#0d192d;border-radius:8px}#plot text{fill:#dbe6f4;font:11px system-ui}
 </style></head><body>
 <h2>Alpaca PAPER · SPY 0DTE</h2>
-<p>Broker-hosted PAPER orders only. Quotes are free indicative market data (not OPRA); option trade bars may lag. Trading is controlled by the local AION worker, not this website.</p>
+<p>Broker-hosted PAPER orders only. KAIROS V5 alert-driven exits; $2,500 maximum debit per entry and emergency cutoff at 14:45 ET. Indicative quotes are not OPRA and option bars may lag. Only the local AION worker can submit orders.</p>
 <div class="bar"><button onclick="refresh()">Refresh chain / status</button><span id="state">Loading…</span></div>
 <div class="card"><h3>Alpaca PAPER orders and worker</h3><div id="orders">Loading…</div></div>
 <div class="card"><h3>Today's SPY 0DTE calls and puts</h3><p id="chain-note"></p><table><thead><tr><th>Contract</th><th>Side</th><th>Strike</th><th>Bid</th><th>Ask</th><th>Delta</th><th>IV</th><th>Quote time</th><th>Chart</th></tr></thead><tbody id="chain"></tbody></table></div>
@@ -117,11 +118,11 @@ async function api(path){const r=await fetch(path,{cache:'no-store'});if(!r.ok)t
 async function refresh(){
  el('state').textContent='Refreshing…';
  try{const s=await api('api/status');
-  el('state').textContent='Account '+s.account_status+' · worker '+(s.armed?'ARMED':'DISARMED')+' · cash $'+fmt(s.paper_cash);
+  el('state').textContent='Account '+s.account_status+' · worker '+(s.armed?'ARMED':'DISARMED')+' · cash $'+fmt(s.paper_cash)+' · cap $'+fmt(s.max_entry_premium_usd)+' per entry';
   const table=document.createElement('table');const head=document.createElement('tr');
-  ['Time','Action','Contract','State','Filled','Price'].forEach(x=>{const th=document.createElement('th');th.textContent=x;head.appendChild(th)});table.appendChild(head);
+  ['Time','Action','Contract','Requested','State','Filled','Price'].forEach(x=>{const th=document.createElement('th');th.textContent=x;head.appendChild(th)});table.appendChild(head);
   for(const o of s.orders){const tr=document.createElement('tr');
-   [o.submitted_at,o.action,o.option_symbol,o.state,o.filled_qty,o.fill_price].forEach(x=>{const td=document.createElement('td');td.textContent=text(x);tr.appendChild(td)});table.appendChild(tr)}
+   [o.submitted_at,o.action,o.option_symbol,o.qty,o.state,o.filled_qty,o.fill_price].forEach(x=>{const td=document.createElement('td');td.textContent=text(x);tr.appendChild(td)});table.appendChild(tr)}
   el('orders').replaceChildren(table);
  }catch(e){el('state').textContent='Account unavailable: '+e.message}
  try{const d=await api('api/chain');el('chain-note').textContent=(d.spot?'SPY IEX: $'+d.spot+' · ':'')+d.notice;

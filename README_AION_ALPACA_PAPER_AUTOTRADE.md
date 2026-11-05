@@ -1,3 +1,5 @@
+> **Superseded as of November 5, 2026.** This is the original one-contract/$300 paper worker guide. The source has since been upgraded to a **$2,500 maximum total premium debit**, KAIROS V5-triggered exits and sequential reversals. Read [`README_AION_KAIROS_V5_2500_PREMIUM.md`](README_AION_KAIROS_V5_2500_PREMIUM.md) for current installation, risk controls and commands. Historical instructions below are archival and may be unsafe if followed as current.
+
 # AION KAIROS V5 — ALPACA PAPER algorithmic 0DTE execution
 
 This is **trade-capable code**, not a read-only brokerage connector. It consumes **accepted KAIROS V5 TradingView signals** from your existing AION simulator DB, selects a same-day SPY call/put, and can submit **actual paper orders** using **Alpaca's official Paper Trading API**. It never uses SnapTrade to place orders. Your SnapTrade-connected Webull CASH and MARGIN accounts are outside the entire execution path.

@@ -90,7 +90,7 @@ def summarize_fills(fills: list[dict[str, Any]]) -> dict[str, Any]:
     realized = {"PAPER": 0.0, "LIVE": 0.0}
     closings = {"PAPER": 0, "LIVE": 0}
     unmatched_exit = 0
-    for fill in sorted(fills, key=lambda x: (x["filled_at"], x["fill_id"])):
+    for fill in sorted(fills, key=lambda x: (x["filled_at"], 0 if x["action"]=="BUY_TO_OPEN" else 1, x["fill_id"])):
         mode = fill["mode"]
         key = (mode, fill["option_symbol"])
         lots = inventory.setdefault(key, [])

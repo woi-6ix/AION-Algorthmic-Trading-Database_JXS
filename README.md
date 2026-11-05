@@ -1,6 +1,6 @@
 # AION Quant Labs — Algorithmic Trading Research & Paper Execution
 
-Private, Windows-hosted **AION** platform for KAIROS V5 SPY intraday strategy signals, historical stock/0DTE option research, mobile monitoring, and **Alpaca Paper-only** options execution.
+Private, Windows-hosted **AION** platform for KAIROS V5 SPY intraday strategy signals, historical stock/0DTE option research, mobile monitoring, and **Alpaca Paper-only** options execution sized up to **$2,500 in option premium per entry** on KAIROS V5 alerts.
 
 > **Status (Nov 5, 2026):** Code assembled from the AION packages built during development. The latest local Options Chart HTTP 400 patch is applied in this source snapshot, but the fix **has not yet been verified against live Alpaca data**. This repository is not a copy of any undisclosed files present only on the developer's Windows laptop. Real-money execution is **not implemented** and must remain disabled.
 
@@ -57,6 +57,8 @@ The worker is **separate** from the read-only dashboard. It is designed to use `
 
 When validating options data, `.\.venv\Scripts\python.exe .\aion_alpaca_paper_algo.py chart --symbol <OCC_SYMBOL>` requests 3-minute historical option bars. On Alpaca's free options market-data plan, historical candles can lag real time; quotes are *indicative*, not OPRA-quality consolidated prices.
 
+**Trading behavior:** KAIROS V5 LONG and SHORT alert fills select SPY 0DTE calls/puts; sizing floors the number of contracts under a **$2,500 total premium-debit cap** (25-contract secondary limit). Real KAIROS V5 exit, kernel-flip, reversal and session-cutoff alerts control closes; the old +30%/−25% premium exits have been removed. A separate 14:45 ET failsafe still attempts a close. See [KAIROS V5 $2,500 Paper Upgrade](README_AION_KAIROS_V5_2500_PREMIUM.md).
+
 **Automated trading requires explicit user action:** `arm`, then `run`. Do not arm without successful tests of quote freshness, account permissions, order reconciliation, exit handling and webhook origin security. `disarm` prevents new entries but **does not cancel resting orders or close existing paper positions**. `AION_MODE=SIMULATION` is intentional even for the Alpaca Paper worker. The worker processes accepted events from the local simulator, not from the dashboard browser.
 
 ## Research/backtesting caveats
@@ -86,10 +88,10 @@ When validating options data, `.\.venv\Scripts\python.exe .\aion_alpaca_paper_al
 
 ## Development status
 
-- Latest implemented: direct Alpaca Paper SPY 0DTE options selection, order submission worker, journal reconciliation, options-chain data panel, and a patch for historical bars HTTP 400.
+- Latest implemented: direct Alpaca Paper SPY 0DTE options selection, order submission worker, journal reconciliation, options-chain data panel, and a patch for historical bars HTTP 400, plus the $2,500 KAIROS V5 signal-aligned paper execution upgrade.
 - Verified offline and locally in the development environment; *not* remotely deployed or validated against the user's running Windows copy in this GitHub import.
-- Known gap: stable public HTTPS TradingView delivery, real options-feed entitlements, robust paper trade lifecycle validation, exactly-once order handling across process crashes, and full market-session/expiry safety.
+- Known gaps: options historical chart fix not yet verified against your account, free indicative option quotes are not reliable executable OPRA, limit exits may not fill, temporary Cloudflare tunnels are fragile, order/position reconciliation still requires supervised paper testing, and the laptop needs to remain running.
 
 ## License
 
-This repository includes the **MIT License** in [`LICENSE`](LICENSE), as established by the repository owner. Check individual third-party dependencies and external data-provider terms separately.
+This repository is covered by its existing [MIT License](LICENSE), except where separate third-party terms apply.
