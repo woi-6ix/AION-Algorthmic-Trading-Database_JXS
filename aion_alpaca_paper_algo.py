@@ -176,20 +176,34 @@ class AlpacaPaper:
         return obj.get('snapshots') or {}
 
     def bars(self, symbol, start, end=None):
+        """Read aggregated historical option *trades* (not indicative quotes).
+
+        Alpaca /v1beta1/options/bars DOES NOT accept a `feed` parameter.
+        Limit the requested end to 20 minutes ago for Basic-plan history.
+        All calls are GETs to data.alpaca.markets, never order endpoints.
+        """
         if not OCC.fullmatch(symbol):
             raise RuntimeError('SPY OCC contract required')
+        expiration = datetime.strptime(symbol[3:9], '%y%m%d').date()
+        session_close = datetime.combine(expiration, time(16, 0), NY).astimezone(timezone.utc)
+        entitlement_end = now_utc() - timedelta(minutes=20)
+        requested_end = dt(end) if end is not None else session_close
+        last_entitled_bar = min(session_close, entitlement_end, requested_end)
+        if last_entitled_bar <= dt(start):
+            return []
         result, token = [], None
         for _ in range(5):
-            q = {'symbols':symbol,'timeframe':'3Min','start':start,'feed':'indicative',
-                 'limit':1000,'sort':'asc'}
-            # For today's contract, omit end so Alpaca caps results to the
-            # latest history available under the market-data subscription.
-            if end is not None: q['end'] = end
-            if token: q['page_token'] = token
-            obj = self.call('GET','/v1beta1/options/bars',data=True,params=q)
+            q = {'symbols': symbol, 'timeframe': '3Min', 'start': start,
+                 'end': last_entitled_bar.isoformat(), 'limit': 1000, 'sort': 'asc'}
+            if token:
+                q['page_token'] = token
+            obj = self.call('GET', '/v1beta1/options/bars', data=True, params=q)
             result.extend((obj.get('bars') or {}).get(symbol) or [])
             token = obj.get('next_page_token')
-            if not token: break
+            if not token:
+                break
+        if token:
+            raise RuntimeError('Historical options bars response was truncated; no partial chart returned')
         return result
 
 

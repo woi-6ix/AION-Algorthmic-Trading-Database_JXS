@@ -28,3 +28,4 @@ Do not use old Webull preflight scripts to place orders. Active auto execution i
 - `AION_Exact_Official_Logo_Patch.zip` — archived original official-logo installer.
 
 - `AION_KAIROS_V5_2500_Premium_Paper_Upgrade.zip` — latest KAIROS V5 $2,500 total-premium multi-contract paper executor, true V5 alert exits/reversals, partial-fill reconciliation and backup-first Windows installer.
+- `AION_Alpaca_Historical_Options_Bars_Feed_Fix.zip` — valid historical bars query (no `feed`), corrected preflight and chart source labeling; backup-first installer and offline regression tests.

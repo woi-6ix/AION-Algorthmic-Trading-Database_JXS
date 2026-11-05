@@ -1,4 +1,4 @@
-"""AION SPY option chart and KAIROS V5 PAPER readiness preflight.
+"""AION SPY option historical trade-bars and KAIROS V5 PAPER readiness preflight.
 
 Strictly read-only. Does not arm a bot, write state, submit orders, or
 send a webhook. No secrets or brokerage account IDs are printed.
@@ -70,15 +70,17 @@ def local_get(url: str) -> tuple[int | None, dict | None]:
 
 def run_readonly_chart_probe(api: AlpacaPaper, symbol: str, now: datetime | None = None) -> bool:
     start, end = option_session(symbol, now)
+    # Historical option bars aggregate trades and have NO `feed` query param.
+    # Only the snapshots and latest-quote endpoints accept `feed=indicative`.
     cases = [
-        ("3Min indicative (subscription default end)", "3Min", "indicative", None),
-        ("3Min indicative (delayed end)", "3Min", "indicative", end),
-        ("3Min OPRA (delayed end)", "3Min", "opra", end),
-        ("1Min OPRA (delayed end)", "1Min", "opra", end),
+        ("3Min historical trades (20-min delay)", "3Min", end),
+        ("1Min historical trades (20-min delay)", "1Min", end),
+        ("5Min historical trades (20-min delay)", "5Min", end),
+        ("3Min historical trades (no explicit end)", "3Min", None),
     ]
-    for label, timeframe, feed, finish in cases:
+    for label, timeframe, finish in cases:
         params = {"symbols": symbol, "timeframe": timeframe, "start": start,
-                  "feed": feed, "sort": "asc", "limit": 1000}
+                  "sort": "asc", "limit": 1000}
         if finish is not None:
             params["end"] = finish
         # Hard-coded MARKET-DATA HTTPS URL; GET only; paper trading host never called.
@@ -90,7 +92,7 @@ def run_readonly_chart_probe(api: AlpacaPaper, symbol: str, now: datetime | None
             bars = (obj.get("bars") or {}).get(symbol) or []
             if bars:
                 print(f"  PASS {label}: {len(bars)} bars, last {bars[-1].get('t', 'unknown')}")
-                print("  NOTE: Historical charts can lag by 15+ minutes; these are not order-entry quotes.")
+                print("  NOTE: Historical TRADE bars can lag by 15+ minutes; they are NOT order-entry quotes.")
                 return True
             print(f"  EMPTY {label}: HTTP 200, no bars for this contract")
         except urllib.error.HTTPError as e:

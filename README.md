@@ -96,6 +96,10 @@ When validating options data, `.\.venv\Scripts\python.exe .\aion_alpaca_paper_al
 
 If historical SPY options bars return `Alpaca DATA HTTP 400`, use the **read-only** [`aion_option_preflight.py`](aion_option_preflight.py) and the [preflight guide](README_AION_PAPER_PREFLIGHT.md) to diagnose the historical quote entitlement and GET parameters without arming the paper bot. The ZIP is archived in [`patches/release_archives/`](patches/release_archives/). **No new brokerage orders** are placed by this diagnostic.
 
+### November 5, 2026 — historical SPY options bars HTTP 400 repair
+
+The Alpaca historical option-bars API rejects `feed=indicative` (`unexpected query parameter(s): feed`); the historical bar loader and chart preflight now omit that parameter, cap requests conservatively for a Basic-plan delay, and label historical *trade bars* separately from indicative latest quotes. See [chart fix and installation](README_AION_OPTIONS_BARS_FEED_FIX.md). The **$2,500 total premium** KAIROS V5 paper-order logic and account guards are unchanged; this release was tested **offline** and still requires a successful Alpaca call on the Windows host. Broker paper automation stays **disarmed** until verified.
+
 ## License
 
 This repository is covered by its existing [MIT License](LICENSE), except where separate third-party terms apply.

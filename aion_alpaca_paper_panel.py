@@ -86,7 +86,7 @@ def bars(symbol: str=Query(pattern=r'^SPY\d{6}[CP]\d{8}$')):
         start=datetime.combine(exp,time(9,30),NY).astimezone(timezone.utc).isoformat()
         end=datetime.combine(exp,time(16,0),NY).astimezone(timezone.utc).isoformat()
         raw=api.bars(symbol,start,end if exp<today else None)
-        return {'symbol':symbol,'feed':'indicative','bars':[
+        return {'symbol':symbol,'source':'historical_option_trade_bars','bars':[
           {k:v for k,v in b.items() if k in ('t','o','h','l','c','v')}
           for b in raw
         ]}
@@ -109,7 +109,7 @@ a{color:#f2d77c}.notice{color:#f5cb86}.good{color:#8cddb6}.err{color:#ff9e9e}
 <div class="bar"><button onclick="refresh()">Refresh chain / status</button><span id="state">Loading…</span></div>
 <div class="card"><h3>Alpaca PAPER orders and worker</h3><div id="orders">Loading…</div></div>
 <div class="card"><h3>Today's SPY 0DTE calls and puts</h3><p id="chain-note"></p><table><thead><tr><th>Contract</th><th>Side</th><th>Strike</th><th>Bid</th><th>Ask</th><th>Delta</th><th>IV</th><th>Quote time</th><th>Chart</th></tr></thead><tbody id="chain"></tbody></table></div>
-<div class="card"><h3 id="chart-title">3-minute option premium chart</h3><svg id="plot" viewBox="0 0 750 260" role="img" aria-label="Option 3-minute close price chart"><text x="20" y="130">Select a contract above to load its historical option bars.</text></svg><p id="chart-note"></p></div>
+<div class="card"><h3 id="chart-title">3-minute option trade price chart</h3><svg id="plot" viewBox="0 0 750 260" role="img" aria-label="Option 3-minute close price chart"><text x="20" y="130">Select a contract above to load its historical option bars.</text></svg><p id="chart-note"></p></div>
 <script>
 const el=id=>document.getElementById(id);
 const text=(v)=>v==null?'—':String(v);
@@ -133,7 +133,7 @@ async function refresh(){
  }catch(e){el('chain-note').textContent='Chain unavailable: '+e.message}
 }
 async function chart(symbol){el('chart-title').textContent='3-minute option bars · '+symbol;el('chart-note').textContent='Loading Alpaca historical options bars…';
- try{const data=await api('api/bars?symbol='+encodeURIComponent(symbol));const points=data.bars.filter(b=>Number.isFinite(Number(b.c))&&Number(b.c)>0);draw(points);el('chart-note').textContent=points.length+' bars · Indicative historical options feed; bars can lag by 15 minutes.'}
+ try{const data=await api('api/bars?symbol='+encodeURIComponent(symbol));const points=data.bars.filter(b=>Number.isFinite(Number(b.c))&&Number(b.c)>0);draw(points);el('chart-note').textContent=points.length+' bars · Historical option trade bars, NOT indicative quotes; Basic-plan bars may lag by 15+ minutes.'}
  catch(e){el('chart-note').textContent='Chart unavailable: '+e.message}}
 function draw(arr){const s=el('plot');while(s.firstChild)s.removeChild(s.firstChild);const NS='http://www.w3.org/2000/svg';
  function add(tag,attrs){const x=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))x.setAttribute(k,v);s.appendChild(x);return x}
