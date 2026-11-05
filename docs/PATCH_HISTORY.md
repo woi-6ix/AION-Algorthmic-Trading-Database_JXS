@@ -8,6 +8,8 @@ Do not use old Webull preflight scripts to place orders. Active auto execution i
 
 ### Archive list
 
+- `AION_Exact_Official_Logo_Patch.zip` — superseded high-resolution official-logo installer retained for archival completeness.
+
 - `AION_Alpaca_Paper_1st_Options_Order_Trial.zip`
 - `AION_Alpaca_Paper_Options_Chart_400_Fix.zip`
 - `AION_Alpaca_Paper_SnapTrade_Connect.zip`
