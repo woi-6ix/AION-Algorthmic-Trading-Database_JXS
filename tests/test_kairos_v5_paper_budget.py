@@ -286,3 +286,22 @@ def test_reversal_cancels_unfilled_opposing_entry_and_then_opens_put():
     assert 'REVERSAL_ENTRY' in mod.finish_pending_reversal(api)
     assert api.submissions[-1]['symbol']==PUT
     assert len(api.submissions)==2
+
+
+def test_distinct_new_same_direction_pine_fill_is_logged(monkeypatch,tmp_path):
+    monkeypatch.setenv('AION_MODE','SIMULATION')
+    spec=importlib.util.spec_from_file_location('aion_kairos_server_same_side_test',PARENT/'aion_kairos_server.py')
+    svr=importlib.util.module_from_spec(spec)
+    sys.modules[spec.name]=svr
+    spec.loader.exec_module(svr)
+    monkeypatch.setattr(svr,'DB',tmp_path/'signals.sqlite3')
+    svr.init_db()
+    from fastapi.testclient import TestClient
+    c=TestClient(svr.app)
+    body={'strategy':'KAIROS_V5','symbol':'SPY','timeframe':'3m','emitted_at':datetime.now(timezone.utc).isoformat(),'signal':'BUY_CALL'}
+    a=c.post('/webhook',json={**body,'event_id':'same-side-event-1'}).json()
+    b=c.post('/webhook',json={**body,'event_id':'same-side-event-2'}).json()
+    replay=c.post('/webhook',json={**body,'event_id':'same-side-event-2'}).json()
+    assert a['result']=='SIGNAL_LOGGED'
+    assert b['result']=='SIGNAL_LOGGED'
+    assert replay['result']=='DUPLICATE'

@@ -147,8 +147,11 @@ def webhook(signal: KairosSignal):
                 next_state = direction[signal.signal]
                 outcome, detail = "SIGNAL_LOGGED", "No option contract or fill has been simulated"
             elif prev == direction[signal.signal]:
+                # TradingView emits *strategy order fills*, each with unique event_id.
+                # A past missed EXIT (or previous disarmed session) must not block a
+                # legitimately new Pine entry. Broker worker enforces one position.
                 next_state = prev
-                outcome, detail = "IGNORED_ALREADY_SIGNALED", "Repeated direction"
+                outcome, detail = "SIGNAL_LOGGED", "Fresh Pine order fill; paper worker controls open exposure"
             else:
                 # KAIROS V5 strategy.entry() can reverse an open position directly.
                 # This records a NEW desired signal only; the separate Alpaca Paper
