@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import sqlite3
 import sys
 import time as time_module
@@ -853,7 +854,13 @@ def cli():
         prior_account=get_cfg('paper_account_id')
         if prior_account is not None and prior_account != str(a['id']):
             raise RuntimeError('Existing paper account binding differs; refusing re-arm')
-        if not sys.stdin.isatty():raise RuntimeError('Arm requires an interactive terminal')
+        if not sys.stdin.isatty():
+            # Only an authenticated dashboard request may approve noninteractive arming.
+            # All existing account/order guards still run before this check.
+            expected = os.environ.get('AION_CONTROL_TOKEN', '').strip()
+            approval = os.environ.get('AION_LTM_ARM_APPROVAL', '')
+            if len(expected) < 24 or not secrets.compare_digest(approval, expected):
+                raise RuntimeError('Arm requires interactive terminal or authenticated AION LTM approval')
         print('ONLY Alpaca PAPER API can receive orders. Real Webull/Alpaca LIVE are not used.')
         print('Trading mode must remain SIMULATION. Max $2,500 TOTAL paper premium per entry, <=25 contracts.')
         print('Exits: KAIROS V5 exit/reversal signals; 14:45 ET emergency failsafe.')
