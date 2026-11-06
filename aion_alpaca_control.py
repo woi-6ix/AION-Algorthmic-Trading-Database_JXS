@@ -119,6 +119,43 @@ def broker(method: str, path: str, *, query: str = ""):
         fail(502, "Alpaca PAPER API unavailable or returned invalid data")
 
 
+# The scheduler task executes locally under the logged-in Windows account.
+SUPERVISOR_TASK = "AION-Alpaca-PAPER-Supervisor"
+SUPERVISOR_STATUS = ROOT / ".aion_paper_supervisor_status.json"
+
+
+def supervisor_status() -> dict:
+    """Fresh local supervisor heartbeat, never trusted for broker executions."""
+    try:
+        payload = json.loads(SUPERVISOR_STATUS.read_text(encoding="utf-8"))
+        stamp = datetime.fromisoformat(str(payload["updated_at"]).replace("Z", "+00:00"))
+        age = (datetime.now(timezone.utc) - stamp).total_seconds()
+        if stamp.tzinfo is None or not -15 <= age <= 15:
+            return {"online": False, "mode": "OFFLINE", "reason": "Supervisor heartbeat stale"}
+        mode = str(payload.get("mode", "UNKNOWN"))
+        if mode not in {"RUNNING", "STARTING", "STOPPING", "WAITING", "HALTED", "EXTERNAL_WORKER", "WAITING_OPERATOR"}:
+            mode = "UNKNOWN"
+        return {"online": True, "mode": mode,
+                "worker_pid": payload.get("worker_pid"),
+                "reason": str(payload.get("reason", ""))[:150]}
+    except (OSError, ValueError, TypeError, KeyError):
+        return {"online": False, "mode": "OFFLINE", "reason": "Supervisor not running or not installed"}
+
+
+def request_supervisor_start() -> str:
+    """Start the pre-registered local task; no trading command or bypass."""
+    if sys.platform != "win32":
+        return "Supervisor auto-start is only supported on Windows"
+    try:
+        result = subprocess.run(["schtasks.exe", "/Run", "/TN", SUPERVISOR_TASK],
+                                capture_output=True, text=True, timeout=10, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return "Could not start Windows supervisor task; inspect Task Scheduler"
+    if result.returncode != 0:
+        return "Supervisor task is not available; install/start it with the Windows setup script"
+    return "Windows supervisor task start requested; wait for a fresh worker heartbeat"
+
+
 def worker_status():
     path = ROOT / CLI_NAME
     if not path.is_file():
@@ -261,6 +298,7 @@ def get_state(request: HTTPRequest):
         state["broker_connected"] = False
         state["broker_error"] = exc.detail
         state["positions"] = []
+    state["supervisor"] = supervisor_status()
     state["account_mode"] = "PAPER ONLY"
     state["auto_trading_active"] = bool(state["armed"] and not state["kill_switch"] and state["account_bound"] and state["worker_recent"])
     return state
@@ -285,10 +323,18 @@ def resume_trading(request: HTTPRequest, payload: Confirmation):
         state = ensure_bound()
         if not state["armed"] or state["kill_switch"]:
             state = worker_command("arm")
-        message = ("PAPER bot armed and worker heartbeat recent. Automated entries can resume."
-                   if state["worker_recent"] else
-                   "PAPER bot armed, but worker heartbeat is stale; start/verify the existing worker before expecting trades.")
-        return {"message": message, "worker": state}
+        supervisor = supervisor_status()
+        if not supervisor["online"]:
+            task_note = request_supervisor_start()
+        elif supervisor["mode"] == "WAITING_OPERATOR":
+            task_note = "Manual worker handoff pending: Pause then Resume after verifying broker positions/orders"
+        else:
+            task_note = "Supervisor online; worker heartbeat may take a few seconds to refresh"
+        if state["worker_recent"]:
+            message = "PAPER worker heartbeat recent; automated entries can resume. " + task_note
+        else:
+            message = "PAPER bot armed; worker is not yet confirmed active. " + task_note
+        return {"message": message, "worker": state, "supervisor": supervisor_status()}
 
 
 @ROUTER.post("/close/{symbol}")
