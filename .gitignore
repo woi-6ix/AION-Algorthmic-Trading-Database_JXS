@@ -21,6 +21,10 @@ credentials.json
 *.log.*
 AION_PAPER_KILL_SWITCH.txt
 .aion_alpaca_paper_worker.lock
+.aion_alpaca_paper_supervisor.lock
+.aion_paper_supervisor_status.json
+.aion_paper_supervisor_status.json.*.tmp
+/logs/
 
 # Virtual environments, generated downloads, and backups
 .venv/
