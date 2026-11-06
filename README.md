@@ -38,8 +38,7 @@ Copy `.env.example` to a local `.env` and fill in **paper-only** API credentials
 # Terminal 2: authenticated TradingView gateway (local)
 .\.venv\Scripts\python.exe -m uvicorn aion_tv_gateway:app --host 127.0.0.1 --port 8002
 # Terminal 3: unified AION dashboard + PAPER-only controls (local)
-$env:AION_CONTROL_TOKEN = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
-.\.venv\Scripts\python.exe -m uvicorn aion_ltm_with_controls:app --host 127.0.0.1 --port 8501
+.\start_aion_ltm_controls.ps1
 ```
 
 Local dashboard: `http://127.0.0.1:8501/` · Backtests: `http://127.0.0.1:8501/lab/` · Options panel: `http://127.0.0.1:8501/alpaca-paper/`.
@@ -64,6 +63,9 @@ When validating options data, `.\.venv\Scripts\python.exe .\aion_alpaca_paper_al
 **Automated trading requires explicit user action:** `arm`, then `run`. Do not arm without successful tests of quote freshness, account permissions, order reconciliation, exit handling and webhook origin security. `disarm` prevents new entries but **does not cancel resting orders or close existing paper positions**. `AION_MODE=SIMULATION` is intentional even for the Alpaca Paper worker. The worker processes accepted events from the local simulator, not from the dashboard browser.
 
 ## AION LTM — Alpaca PAPER manual controls (opt-in)
+
+**Stable token startup:** Launch port 8501 with `start_aion_ltm_controls.ps1` instead of manually regenerating `AION_CONTROL_TOKEN`. The script keeps a per-user secret under `%LOCALAPPDATA%\AION\ltm-control-token.txt`, copies it to the clipboard, and prevents a second server from occupying the port. After a browser refresh, recopy the same secret with `Get-Content "$env:LOCALAPPDATA\AION\ltm-control-token.txt" -Raw | Set-Clipboard`. See [persistent token guide](README_AION_LTM_PERSISTENT_TOKEN.md). This changes dashboard authentication only and does not place orders.
+
 
 The `aion_ltm_with_controls.py` wrapper retains the original dashboard UI, official logo, `/lab/` backtesting and read-only `/alpaca-paper/` charts. It adds authenticated `/api/alpaca-control/` endpoints and a floating control panel to pause (disarm), resume (arm), close a selected PAPER position, or request account-wide PAPER position liquidation. This is **PAPER ONLY**; no live-trading API host or trade credentials are included in browser code.
 
