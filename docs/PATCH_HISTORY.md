@@ -29,3 +29,5 @@ Do not use old Webull preflight scripts to place orders. Active auto execution i
 
 - `AION_KAIROS_V5_2500_Premium_Paper_Upgrade.zip` — latest KAIROS V5 $2,500 total-premium multi-contract paper executor, true V5 alert exits/reversals, partial-fill reconciliation and backup-first Windows installer.
 - `AION_Alpaca_Historical_Options_Bars_Feed_Fix.zip` — valid historical bars query (no `feed`), corrected preflight and chart source labeling; backup-first installer and offline regression tests.
+
+- `AION_LTM_Alpaca_Paper_Controls_UPDATED.zip` — updated local installation bundle for token-protected PAPER-only pause, resume, selected-position close and account-wide close, with a backup-first worker ARM compatibility patch. The current source files and [setup guide](../README_AION_LTM_PAPER_CONTROLS.md) are at the repository root; the ZIP is distributed separately.
