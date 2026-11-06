@@ -73,6 +73,12 @@ The `aion_ltm_with_controls.py` wrapper retains the original dashboard UI, offic
 
 Pause and manual close stop **new orders and automated exit handling** because the worker disarms; existing positions do not close automatically on pause. Resume *re-arms* but **does not restart a stopped worker**. Broker close requests are not evidence that fills completed. Test with PAPER and no open positions before attempting close operations; verify order status in Alpaca.
 
+## Supervised PAPER worker (Windows)
+
+Opt-in `aion_paper_supervisor.py` can run `aion_alpaca_paper_algo.py run` independently of the browser and the dashboard terminal, under a per-user Windows Task Scheduler logon task created by `install_aion_paper_supervisor.ps1`. It starts a worker **only when already armed, account-bound, and not kill-switched**. A manual worker is never duplicated or silently taken over, and unexpected worker exits trigger the existing kill switch instead of restarting trading indefinitely. The LTM now displays supervisor status and can request the registered task to start when you press Resume.
+
+**Warning:** If the PAPER bot is already armed at Windows sign-in, installing this task authorizes it to resume PAPER trading after you log in. It never automatically arms the bot, and it cannot manage orders while the PC is off, asleep or disconnected. Read [Windows supervisor setup and safeguards](README_AION_PAPER_SUPERVISOR.md) before registering or starting the task. Keep it PAPER-only.
+
 ## Research/backtesting caveats
 
 - Stock 3-minute history is available through imported bars/provider downloads; it is **not** a complete reconstruction of TradingView's Pine KAIROS V5 indicators.
