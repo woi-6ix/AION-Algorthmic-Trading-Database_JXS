@@ -76,6 +76,7 @@ def env_values() -> dict[str, str]:
 def paper_keys() -> tuple[str, str]:
     config = env_values()
     for k, s in (
+        ("ALPACA_PAPER_API_KEY", "ALPACA_PAPER_SECRET_KEY"),
         ("ALPACA_PAPER_API_KEY", "ALPACA_PAPER_API_SECRET"),
         ("ALPACA_PAPER_KEY_ID", "ALPACA_PAPER_SECRET_KEY"),
         ("APCA_API_KEY_ID", "APCA_API_SECRET_KEY"),
