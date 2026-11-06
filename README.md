@@ -10,7 +10,8 @@ Private, Windows-hosted **AION** platform for KAIROS V5 SPY intraday strategy si
 | --- | --- | --- |
 | `aion_kairos_server.py` | `127.0.0.1:8001` | KAIROS V5 signal simulator; SQLite event tracking |
 | `aion_tv_gateway.py` | `127.0.0.1:8002` | Authenticates TradingView alerts, relays to simulator |
-| `aion_live_dashboard.py` | `127.0.0.1:8501` | Read-only mobile monitoring and research UI |
+| `aion_live_dashboard.py` | `127.0.0.1:8501` | Read-only monitoring and research base app |
+| `aion_ltm_with_controls.py` | `127.0.0.1:8501` | Opt-in, token-protected Alpaca PAPER manual position controls and automation pause/resume |
 | `aion_backtest_engine/` | mounted at `/lab/` | Stock/0DTE historical backtesting and CSV imports |
 | `aion_alpaca_paper_panel.py` | mounted at `/alpaca-paper/` | Read-only options chain/chart & paper status |
 | `aion_alpaca_paper_algo.py` | separate command-line worker | **Alpaca Paper** SPY 0DTE limit orders from accepted signals |
@@ -36,8 +37,9 @@ Copy `.env.example` to a local `.env` and fill in **paper-only** API credentials
 .\.venv\Scripts\python.exe -m uvicorn aion_kairos_server:app --host 127.0.0.1 --port 8001
 # Terminal 2: authenticated TradingView gateway (local)
 .\.venv\Scripts\python.exe -m uvicorn aion_tv_gateway:app --host 127.0.0.1 --port 8002
-# Terminal 3: unified AION dashboard (local)
-.\.venv\Scripts\python.exe -m uvicorn aion_live_dashboard:app --host 127.0.0.1 --port 8501
+# Terminal 3: unified AION dashboard + PAPER-only controls (local)
+$env:AION_CONTROL_TOKEN = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
+.\.venv\Scripts\python.exe -m uvicorn aion_ltm_with_controls:app --host 127.0.0.1 --port 8501
 ```
 
 Local dashboard: `http://127.0.0.1:8501/` · Backtests: `http://127.0.0.1:8501/lab/` · Options panel: `http://127.0.0.1:8501/alpaca-paper/`.
@@ -60,6 +62,14 @@ When validating options data, `.\.venv\Scripts\python.exe .\aion_alpaca_paper_al
 **Trading behavior:** KAIROS V5 LONG and SHORT alert fills select SPY 0DTE calls/puts; sizing floors the number of contracts under a **$2,500 total premium-debit cap** (25-contract secondary limit). Real KAIROS V5 exit, kernel-flip, reversal and session-cutoff alerts control closes; the old +30%/−25% premium exits have been removed. A separate 14:45 ET failsafe still attempts a close. See [KAIROS V5 $2,500 Paper Upgrade](README_AION_KAIROS_V5_2500_PREMIUM.md).
 
 **Automated trading requires explicit user action:** `arm`, then `run`. Do not arm without successful tests of quote freshness, account permissions, order reconciliation, exit handling and webhook origin security. `disarm` prevents new entries but **does not cancel resting orders or close existing paper positions**. `AION_MODE=SIMULATION` is intentional even for the Alpaca Paper worker. The worker processes accepted events from the local simulator, not from the dashboard browser.
+
+## AION LTM — Alpaca PAPER manual controls (opt-in)
+
+The `aion_ltm_with_controls.py` wrapper retains the original dashboard UI, official logo, `/lab/` backtesting and read-only `/alpaca-paper/` charts. It adds authenticated `/api/alpaca-control/` endpoints and a floating control panel to pause (disarm), resume (arm), close a selected PAPER position, or request account-wide PAPER position liquidation. This is **PAPER ONLY**; no live-trading API host or trade credentials are included in browser code.
+
+**Installation:** See [AION LTM manual controls setup](README_AION_LTM_PAPER_CONTROLS.md). On an existing Windows AION-Execution install, use the backup-first `install_ltm_worker_arm_patch.py` compatibility patch before using Resume. The worker's normal CLI requires a TTY to arm; the patch accepts only approval from an authenticated dashboard process and preserves the worker's account, risk and order checks. Never publish `AION_CONTROL_TOKEN` or run the control service publicly without additional authentication and transport protection.
+
+Pause and manual close stop **new orders and automated exit handling** because the worker disarms; existing positions do not close automatically on pause. Resume *re-arms* but **does not restart a stopped worker**. Broker close requests are not evidence that fills completed. Test with PAPER and no open positions before attempting close operations; verify order status in Alpaca.
 
 ## Research/backtesting caveats
 
