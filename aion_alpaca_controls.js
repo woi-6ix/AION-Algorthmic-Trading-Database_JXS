@@ -40,6 +40,7 @@
       <div class="line"><input id="aion-ctl-token" type="password" autocomplete="off" placeholder="Enter your AION control token" aria-label="Control token"><button class="btn" id="aion-ctl-auth" type="button">Unlock</button></div>
       <div class="line"><span>Bot</span><span class="pill" id="aion-ctl-bot">Locked</span></div>
       <div class="line"><span>Worker heartbeat</span><span id="aion-ctl-heartbeat" class="small">—</span></div>
+      <div class="line"><span>Windows supervisor</span><span id="aion-ctl-supervisor" class="small">—</span></div>
       <div class="line"><span>Broker</span><span id="aion-ctl-broker" class="small">—</span></div>
       <div class="actions"><button class="btn pause" id="aion-ctl-pause" type="button" disabled>Pause automation</button><button class="btn resume" id="aion-ctl-resume" type="button" disabled>Resume automation</button></div>
       <p class="small">Pausing disarms the worker. Open positions remain; automated exits may also stop. Resume arms the worker but does not start a stopped process.</p>
@@ -62,12 +63,13 @@
   function render() {
     const connected = !!state && !!token;
     $('pause').disabled = busy || !connected || !state.account_bound || (!state.armed && state.kill_switch);
-    $('resume').disabled = busy || !connected || !state.account_bound || (state.armed && !state.kill_switch);
+    $('resume').disabled = busy || !connected || !state.account_bound || state.auto_trading_active;
     $('refresh').disabled = busy || !token;
     $('all').disabled = busy || !connected || !state.broker_connected || !state.positions.length;
     $('bot').textContent = !connected ? 'Locked' : (state.auto_trading_active ? 'Active' : state.armed && !state.kill_switch ? 'Armed (worker not confirmed)' : 'Disarmed');
     $('bot').className = 'pill ' + (!connected ? '' : state.auto_trading_active ? 'good' : 'bad');
     $('heartbeat').textContent = connected ? (state.worker_recent ? 'Recent' : 'Stale / offline') : '—';
+    $('supervisor').textContent = connected ? (state.supervisor && state.supervisor.online ? state.supervisor.mode + (state.supervisor.reason ? ' — ' + state.supervisor.reason : '') : 'Offline / not installed') : '—';
     $('broker').textContent = connected ? (state.broker_connected ? 'Alpaca PAPER connected' : safe(state.broker_error)) : '—';
     const container = $('positions');
     container.replaceChildren();
@@ -124,7 +126,7 @@
   $('token').addEventListener('keydown', e => {if(e.key==='Enter') $('auth').click();});
   $('refresh').addEventListener('click', refresh);
   $('pause').addEventListener('click', () => {if(confirm('DISARM the Alpaca PAPER worker? Existing positions stay open, and automated exits may stop.')) action('/pause','PAUSE PAPER BOT');});
-  $('resume').addEventListener('click', () => {if(confirm('ARM Alpaca PAPER automated trading? Make sure your worker is running and open positions are understood.')) action('/resume','RESUME PAPER BOT');});
+  $('resume').addEventListener('click', () => {if(confirm('Allow Alpaca PAPER automation? Resume will arm if needed and request the Windows supervisor to start, provided existing broker safety checks pass.')) action('/resume','RESUME PAPER BOT');});
   $('all').addEventListener('click', () => {
     const required = 'CLOSE ALL PAPER POSITIONS';
     const typed = prompt('This will DISARM AION, CANCEL ALL open orders, and send liquidation orders for ALL Alpaca PAPER positions (including non-KAIROS holdings).\n\nType exactly: ' + required);
