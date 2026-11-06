@@ -38,3 +38,6 @@ Do **not** run `arm` or `run` as part of basic setup. Verify the chart fix, opti
 ## KAIROS V5 $2,500 premium paper upgrade (Nov 5, 2026)
 
 For an EXISTING AION-Execution install, never overwrite running paper code. Disarm the old worker, stop the worker and port 8001; check for any open Alpaca PAPER positions. Then follow the backup-first installer steps in [`README_AION_KAIROS_V5_2500_PREMIUM.md`](../README_AION_KAIROS_V5_2500_PREMIUM.md). This installer preserves SQLite files and `.env`. Restart only port 8001 and 8501 (the unchanged gateway on 8002 and Cloudflare can remain running). Re-arm only after read-only verification, and supervise initial paper orders.
+## Background PAPER supervisor (opt-in)
+
+For a per-user Windows logon Task Scheduler task supervising the PAPER bot, see [`README_AION_PAPER_SUPERVISOR.md`](../README_AION_PAPER_SUPERVISOR.md). This is **not** a replacement for the existing dashboard or webhook gateway. Registration does not arm the bot, but an already-armed bot can trade when the scheduled task runs. Install only after reviewing PAPER positions, open orders and kill-switch behavior; failures halt without automatic restarts.
