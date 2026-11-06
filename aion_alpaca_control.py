@@ -300,7 +300,13 @@ def get_state(request: HTTPRequest):
         state["positions"] = []
     state["supervisor"] = supervisor_status()
     state["account_mode"] = "PAPER ONLY"
-    state["auto_trading_active"] = bool(state["armed"] and not state["kill_switch"] and state["account_bound"] and state["worker_recent"])
+    # An old heartbeat can remain 'recent' for 90s after a worker exits.
+    # If a supervisor is online and explicitly WAITING / HALTED / STOPPING,
+    # do not mislabel the trading engine as Active.
+    supervisor_mode = state["supervisor"]["mode"]
+    worker_process_plausible = (not state["supervisor"]["online"] or supervisor_mode in {"RUNNING", "EXTERNAL_WORKER"})
+    state["auto_trading_active"] = bool(state["armed"] and not state["kill_switch"] and
+                                       state["account_bound"] and state["worker_recent"] and worker_process_plausible)
     return state
 
 
