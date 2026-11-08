@@ -71,8 +71,17 @@ function Get-ArmStatus {
 }
 function Assert-WorkerSafeToStop {
     $output = Get-ArmStatus
-    if ($output -match 'Paper bot armed:\s*True' -and $output -notmatch 'Kill switch:\s*True') {
-        throw 'Worker is ARMED. Pause automation and reconcile broker positions/orders first. Task stop could abandon active exits.'
+    if ($output -notmatch 'Paper bot armed:\s*(True|False)') {
+        throw 'Cannot verify worker arm state. Refusing to stop task until the worker CLI works.'
+    }
+    if ($output -match 'Paper bot armed:\s*True') {
+        throw 'Worker is still ARMED. Pause automation and reconcile PAPER orders first.'
+    }
+    $workers = @(Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object {
+        $_.CommandLine -match 'aion_alpaca_paper_algo\.py["'']?\s+run(?:\s|$)'
+    })
+    if ($workers.Count -gt 0) {
+        throw 'Worker process is still running. Wait for it to exit after Pause; inspect broker orders before stopping supervisor.'
     }
 }
 function Assert-WorkerActivation {
