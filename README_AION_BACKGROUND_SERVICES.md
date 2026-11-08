@@ -58,7 +58,7 @@ Start-Sleep -Seconds 5
 .\aion_services.ps1 -Action DisableWorker # Disable FUTURE sign-in runs, not current worker
 ```
 
-**Pause automation in LTM before stopping the supervisor.** Stopping a running worker while a paper option is open may prevent exit management; neither Pause nor stopping the service closes positions or cancels resting orders. After checking broker state and disarming:
+**Pause automation in LTM before stopping the supervisor.** Stopping a running worker while a paper option is open may prevent exit management; neither Pause nor stopping the service closes positions or cancels resting orders. After checking broker state, disarming, and waiting for the worker process to exit:
 
 ```powershell
 .\aion_services.ps1 -Action StopWorker
