@@ -42,7 +42,7 @@ A response may have `HTTP 200` but zero bars for an illiquid contract. The scrip
 
 ## Next paper trade (not triggered by this tool)
 
-The KAIROS Paper AutoTrader uses up to $2,500 premium per entry, paper-only, with 09:35–14:30 ET entry restriction and a 14:45 ET safety exit attempt. It must be explicitly rearmed by the owner during a subsequent market session, and the first entry/exit should be watched directly in Alpaca Paper. The options pricing feed is indicative; simulated fills and performance aren't equivalent to live 0DTE execution. Do not replay old alerts or bypass the emergency cutoff to force a paper trade.
+The KAIROS Paper AutoTrader uses up to $2,500 premium per entry, paper-only, with 09:31–14:45 ET entry restriction (14:45 exclusive) and a 14:45 ET safety exit attempt. It must be explicitly rearmed by the owner during a subsequent market session, and the first entry/exit should be watched directly in Alpaca Paper. The options pricing feed is indicative; simulated fills and performance aren't equivalent to live 0DTE execution. Do not replay old alerts or bypass the emergency cutoff to force a paper trade.
 
 ## Unit tests
 
