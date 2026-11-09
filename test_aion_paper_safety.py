@@ -32,6 +32,25 @@ class PaperSafetyTests(unittest.TestCase):
             patcher = patch.object(aion, name, root / f"{name.lower()}.test")
             patcher.start()
             self.addCleanup(patcher.stop)
+
+        # Python's sqlite3 connection context manager commits/rolls back but
+        # does NOT close the connection. On Windows/Python 3.13, leaving those
+        # test connections open locks the temporary SQLite files (WinError 32).
+        # Track connections created only inside this test process and close
+        # them BEFORE TemporaryDirectory.cleanup. Never access production DBs.
+        self._test_connections = []
+        original_connect = sqlite3.connect
+
+        def tracked_connect(*args, **kwargs):
+            connection = original_connect(*args, **kwargs)
+            self._test_connections.append(connection)
+            return connection
+
+        connection_patcher = patch.object(aion.sqlite3, "connect", side_effect=tracked_connect)
+        connection_patcher.start()
+        self.addCleanup(connection_patcher.stop)
+        self.addCleanup(self._close_test_connections)
+
         network_block = patch.object(
             aion.AlpacaPaper,
             "call",
@@ -56,6 +75,17 @@ class PaperSafetyTests(unittest.TestCase):
         self.api.submit.side_effect = AssertionError("Unexpected mock submission")
         self.api.cancel.side_effect = AssertionError("Unexpected mock cancellation")
         self.api.order_by_client_id.side_effect = AssertionError("Unexpected mock reconciliation")
+
+    def _close_test_connections(self):
+        # Cleanup callbacks execute in reverse order: close tracked handles,
+        # restore the sqlite3 connect function, unpatch file paths, then
+        # finally remove the temporary directory on Windows.
+        for connection in reversed(self._test_connections):
+            try:
+                connection.close()
+            except sqlite3.ProgrammingError:
+                pass  # Already closed by the function under test.
+        self._test_connections.clear()
 
     @staticmethod
     def et(hour, minute, second=0, day=9):
@@ -82,7 +112,7 @@ class PaperSafetyTests(unittest.TestCase):
             )
 
     def test_entry_cutoff_exact_boundaries(self):
-        self.assertFalse(aion.market_window("ENTRY", self.et(9, 34)))
+        self.assertFalse(aion.market_window("ENTRY", self.et(9, 34)), "Local worker permits 09:34 entry; inspect actual market_window() source before arming")
         self.assertTrue(aion.market_window("ENTRY", self.et(9, 35)))
         self.assertTrue(aion.market_window("ENTRY", self.et(14, 29, 59)))
         self.assertFalse(aion.market_window("ENTRY", self.et(14, 30)))
@@ -92,7 +122,7 @@ class PaperSafetyTests(unittest.TestCase):
         self.assertTrue(aion.market_window("EXIT", self.et(14, 45)))
         self.assertTrue(aion.market_window("EXIT", self.et(15, 1, 59)))
         self.assertFalse(aion.market_window("EXIT", self.et(15, 2)))
-        self.assertFalse(aion.market_window("EXIT", self.et(9, 34)))
+        self.assertFalse(aion.market_window("EXIT", self.et(9, 34)), "Local worker permits 09:34 exit; inspect actual market_window() source before arming")
 
     def test_weekend_closed(self):
         self.assertFalse(aion.market_window("ENTRY", self.et(10, 0, day=8)))
