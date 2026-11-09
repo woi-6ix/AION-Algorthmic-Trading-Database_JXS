@@ -269,8 +269,8 @@ def armed():
 def market_window(signal='ENTRY', current=None):
     n=(current or now_utc()).astimezone(NY)
     if n.weekday() >= 5: return False
-    if signal=='ENTRY': return time(9,31) <= n.time() < time(14,45)
-    # Preserve a brief grace window for KAIROS's 15:00 ET session-cutoff fill alert.
+    if signal=='ENTRY':
+        return time(9,31) <= n.time() < time(14,45)
     return time(9,31) <= n.time() < time(15,2)
 
 
@@ -745,27 +745,42 @@ def risk_exit(api):
 
 @contextmanager
 def single_worker():
-    LOCK.touch(exist_ok=True)
-    f=open(LOCK,'a+b')
+    # Opening a+b creates the lock file if needed. Do not read or write
+    # the locked byte: Windows denies reads through a second file handle.
+    # Windows permits locking bytes past EOF, including empty lock files.
+    f = open(LOCK, 'a+b')
+    acquired = False
+    windows = sys.platform == 'win32'
     try:
-        if sys.platform=='win32':
+        if windows:
             import msvcrt
             f.seek(0)
-            if f.read(1)==b'': f.seek(0);f.write(b'0');f.flush()
-            f.seek(0)
-            msvcrt.locking(f.fileno(),msvcrt.LK_NBLCK,1)
+            try:
+                msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+            except (OSError, BlockingIOError):
+                raise RuntimeError(
+                    'Another AION Alpaca Paper worker is running (or lock unavailable)'
+                ) from None
         else:
             import fcntl
-            fcntl.flock(f.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+            try:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except (OSError, BlockingIOError):
+                raise RuntimeError(
+                    'Another AION Alpaca Paper worker is running (or lock unavailable)'
+                ) from None
+        acquired = True
         yield
-    except (OSError,BlockingIOError):
-        raise RuntimeError('Another AION Alpaca Paper worker is running (or lock unavailable)') from None
     finally:
         try:
-            if sys.platform=='win32':
-                import msvcrt
-                f.seek(0);msvcrt.locking(f.fileno(),msvcrt.LK_UNLCK,1)
-        finally:f.close()
+            if acquired:
+                if windows:
+                    f.seek(0)
+                    msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        finally:
+            f.close()
 
 
 def once(api):
@@ -855,8 +870,8 @@ def cli():
         if prior_account is not None and prior_account != str(a['id']):
             raise RuntimeError('Existing paper account binding differs; refusing re-arm')
         if not sys.stdin.isatty():
-            # Only an authenticated dashboard request may approve noninteractive arming.
-            # All existing account/order guards still run before this check.
+            # Only a server-side, authenticated AION LTM action may arm over a pipe.
+            # This does not bypass the existing account/order/market checks.
             expected = os.environ.get('AION_CONTROL_TOKEN', '').strip()
             approval = os.environ.get('AION_LTM_ARM_APPROVAL', '')
             if len(expected) < 24 or not secrets.compare_digest(approval, expected):
