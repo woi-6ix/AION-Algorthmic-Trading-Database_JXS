@@ -9,6 +9,7 @@ and block the AlpacaPaper.call network method.
 """
 
 import json
+import os
 import sqlite3
 import tempfile
 import unittest
@@ -23,8 +24,16 @@ import aion_alpaca_paper_algo as aion
 class PaperSafetyTests(unittest.TestCase):
     SYMBOL = "SPY261109C00700000"  # Test-only, never submitted to a real broker
     ACCOUNT_ID = "offline-mock-paper-account"
+    WINDOWS = {
+        "repository_0935_1430": ((9, 35), (14, 30), (9, 35), (15, 2)),
+        "local_0931_1445": ((9, 31), (14, 45), (9, 31), (15, 2)),
+    }
 
     def setUp(self):
+        # Strict known contract, not automatically derived from the code under test.
+        self.profile = os.environ.get("AION_SAFETY_WINDOW_PROFILE", "repository_0935_1430")
+        if self.profile not in self.WINDOWS:
+            raise RuntimeError("Unknown AION_SAFETY_WINDOW_PROFILE")
         self.temp = tempfile.TemporaryDirectory(prefix="aion-paper-safety-")
         self.addCleanup(self.temp.cleanup)
         root = Path(self.temp.name)
@@ -111,18 +120,26 @@ class PaperSafetyTests(unittest.TestCase):
                  broker_order_id, str(filled), journaled, "0"),
             )
 
+    def assert_window_matches(self, signal, start, end):
+        begin = self.et(*start)
+        cutoff = self.et(*end)
+        self.assertFalse(aion.market_window(signal, begin - timedelta(seconds=1)),
+                         f"{self.profile}: {signal} permitted before intended start")
+        self.assertTrue(aion.market_window(signal, begin),
+                        f"{self.profile}: {signal} blocked at intended start")
+        self.assertTrue(aion.market_window(signal, cutoff - timedelta(seconds=1)),
+                        f"{self.profile}: {signal} blocked before intended cutoff")
+        self.assertFalse(aion.market_window(signal, cutoff),
+                         f"{self.profile}: {signal} permitted at cutoff")
+        self.assertFalse(aion.market_window(signal, self.et(15, 40)))
+
     def test_entry_cutoff_exact_boundaries(self):
-        self.assertFalse(aion.market_window("ENTRY", self.et(9, 34)), "Local worker permits 09:34 entry; inspect actual market_window() source before arming")
-        self.assertTrue(aion.market_window("ENTRY", self.et(9, 35)))
-        self.assertTrue(aion.market_window("ENTRY", self.et(14, 29, 59)))
-        self.assertFalse(aion.market_window("ENTRY", self.et(14, 30)))
-        self.assertFalse(aion.market_window("ENTRY", self.et(15, 40)))
+        entry_start, entry_end, _, _ = self.WINDOWS[self.profile]
+        self.assert_window_matches("ENTRY", entry_start, entry_end)
 
     def test_exit_cutoff_exact_boundaries(self):
-        self.assertTrue(aion.market_window("EXIT", self.et(14, 45)))
-        self.assertTrue(aion.market_window("EXIT", self.et(15, 1, 59)))
-        self.assertFalse(aion.market_window("EXIT", self.et(15, 2)))
-        self.assertFalse(aion.market_window("EXIT", self.et(9, 34)), "Local worker permits 09:34 exit; inspect actual market_window() source before arming")
+        _, _, exit_start, exit_end = self.WINDOWS[self.profile]
+        self.assert_window_matches("EXIT", exit_start, exit_end)
 
     def test_weekend_closed(self):
         self.assertFalse(aion.market_window("ENTRY", self.et(10, 0, day=8)))
