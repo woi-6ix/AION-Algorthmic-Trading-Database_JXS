@@ -145,6 +145,25 @@ class PaperSafetyTests(unittest.TestCase):
         self.assertFalse(aion.market_window("ENTRY", self.et(10, 0, day=8)))
         self.assertFalse(aion.market_window("EXIT", self.et(10, 0, day=8)))
 
+    def test_single_worker_rejects_concurrent_lock_and_reacquires(self):
+        # All locks use the per-test temporary path. No live worker is touched.
+        with aion.single_worker():
+            with self.assertRaisesRegex(RuntimeError, "Another AION Alpaca Paper worker"):
+                with aion.single_worker():
+                    self.fail("Second worker acquired a locked file")
+        # The first owner must have released its lock.
+        with aion.single_worker():
+            pass
+
+    def test_single_worker_preserves_exception_and_releases_lock(self):
+        # An exception from the worker body must NOT be mislabeled as a
+        # lock-contention error and must not leave the lock acquired.
+        with self.assertRaisesRegex(ValueError, "test worker processing failure"):
+            with aion.single_worker():
+                raise ValueError("test worker processing failure")
+        with aion.single_worker():
+            pass
+
     def test_contract_budget_and_quantity_limits(self):
         self.assertEqual(aion.contract_quantity(Decimal("1"), Decimal("10000")), 25)
         self.assertEqual(aion.contract_quantity(Decimal("10"), Decimal("10000")), 2)
