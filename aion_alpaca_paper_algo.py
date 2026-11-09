@@ -269,9 +269,9 @@ def armed():
 def market_window(signal='ENTRY', current=None):
     n=(current or now_utc()).astimezone(NY)
     if n.weekday() >= 5: return False
-    if signal=='ENTRY': return time(9,35) <= n.time() < time(14,30)
+    if signal=='ENTRY': return time(9,31) <= n.time() < time(14,45)
     # Preserve a brief grace window for KAIROS's 15:00 ET session-cutoff fill alert.
-    return time(9,35) <= n.time() < time(15,2)
+    return time(9,31) <= n.time() < time(15,2)
 
 
 def quote_ok(snap, current=None):
@@ -302,7 +302,7 @@ def eligible_contract(c, expiry, right):
 def select_contract(api, direction, current=None):
     n=(current or now_utc()).astimezone(NY)
     if not market_window('ENTRY',n):
-        raise RuntimeError('Entry outside strict 09:35–14:30 ET weekday window')
+        raise RuntimeError('Entry outside strict 09:31–14:45 ET weekday window')
     if not api.clock().get('is_open'):
         raise RuntimeError('Alpaca reports market CLOSED; no order')
     underlying=api.stock_spy()
@@ -832,7 +832,7 @@ def cli():
         print('Market open:',bool(api.clock().get('is_open')),'| Bot armed:',armed())
         return
     if args.command=='chain':
-        if not market_window('ENTRY'):raise RuntimeError('Near-ATM chain selection requires 09:35–14:30 ET')
+        if not market_window('ENTRY'):raise RuntimeError('Near-ATM chain selection requires 09:31–14:45 ET')
         for d in ('BUY_CALL','BUY_PUT'):
             try:
                 x=select_contract(api,d)
