@@ -31,7 +31,7 @@ class PaperSafetyTests(unittest.TestCase):
 
     def setUp(self):
         # Strict known contract, not automatically derived from the code under test.
-        self.profile = os.environ.get("AION_SAFETY_WINDOW_PROFILE", "repository_0935_1430")
+        self.profile = os.environ.get("AION_SAFETY_WINDOW_PROFILE", "local_0931_1445")
         if self.profile not in self.WINDOWS:
             raise RuntimeError("Unknown AION_SAFETY_WINDOW_PROFILE")
         self.temp = tempfile.TemporaryDirectory(prefix="aion-paper-safety-")
