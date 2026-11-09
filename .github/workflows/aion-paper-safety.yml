@@ -15,7 +15,7 @@ on:
 
 jobs:
   paper-safety:
-    name: 18 offline PAPER safeguards (Windows)
+    name: 20 offline PAPER safeguards (Windows)
     runs-on: windows-latest
     permissions:
       contents: read
