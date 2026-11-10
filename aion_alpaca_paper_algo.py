@@ -22,7 +22,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from contextlib import contextmanager
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_UP
 from pathlib import Path
 from typing import Any
@@ -266,12 +266,26 @@ def armed():
     return get_cfg('armed','false') == 'true' and not KILL.exists()
 
 
+# One-day PAPER session exception. It expires automatically after 2026-11-10 ET.
+# Default 14:45 emergency exit remains unchanged on all other dates.
+SESSION_OVERRIDE_DAY = date(2026, 11, 10)
+
+
+def session_cutoffs(current=None):
+    n = (current or now_utc()).astimezone(NY)
+    if n.date() == SESSION_OVERRIDE_DAY:
+        return time(15, 30), time(15, 50)  # entry/forced-exit, exit-order grace
+    return time(14, 45), time(15, 2)
+
+
 def market_window(signal='ENTRY', current=None):
-    n=(current or now_utc()).astimezone(NY)
-    if n.weekday() >= 5: return False
-    if signal=='ENTRY':
-        return time(9,31) <= n.time() < time(14,45)
-    return time(9,31) <= n.time() < time(15,2)
+    n = (current or now_utc()).astimezone(NY)
+    if n.weekday() >= 5:
+        return False
+    entry_end, exit_end = session_cutoffs(n)
+    if signal == 'ENTRY':
+        return time(9, 31) <= n.time() < entry_end
+    return time(9, 31) <= n.time() < exit_end
 
 
 def quote_ok(snap, current=None):
@@ -302,7 +316,7 @@ def eligible_contract(c, expiry, right):
 def select_contract(api, direction, current=None):
     n=(current or now_utc()).astimezone(NY)
     if not market_window('ENTRY',n):
-        raise RuntimeError('Entry outside strict 09:31–14:45 ET weekday window')
+        raise RuntimeError('Entry outside configured ET weekday window')
     if not api.clock().get('is_open'):
         raise RuntimeError('Alpaca reports market CLOSED; no order')
     underlying=api.stock_spy()
@@ -728,19 +742,26 @@ def process_events(api):
 
 
 def risk_exit(api):
-    """No independent premium TP/SL: KAIROS V5 exits control this strategy.
+    """PAPER 0DTE emergency exit attempt at the date-specific entry cutoff.
 
-    The 14:45 ET deadline is an emergency attempt to avoid holding expiring
-    contracts and is intentionally NOT a normal strategy exit.
+    KAIROS signals ordinarily control exits. The default failsafe is 14:45 ET;
+    on 2026-11-10 only, it is 15:30 ET. Fills are not guaranteed.
     """
-    if not armed() or not market_window('EXIT'):return None
-    sym=last_owned_symbol()
-    if not sym:return None
-    if now_utc().astimezone(NY).time()<time(14,45):return None
-    if pending_exit():return 'CUTOFF_EXIT_ALREADY_QUEUED'
-    if any(r['action']=='SELL_TO_CLOSE' and r['state'] not in TERMINAL for r in orders_db()):
+    now_et = now_utc().astimezone(NY)
+    if not armed() or not market_window('EXIT', now_et):
+        return None
+    sym = last_owned_symbol()
+    if not sym:
+        return None
+    entry_end, _ = session_cutoffs(now_et)
+    if now_et.time() < entry_end:
+        return None
+    if pending_exit():
+        return 'CUTOFF_EXIT_ALREADY_QUEUED'
+    if any(r['action'] == 'SELL_TO_CLOSE' and r['state'] not in TERMINAL for r in orders_db()):
         return 'CUTOFF_EXIT_WAITING_FOR_FILL'
-    return request_strategy_exit(api,'cutoff-'+now_utc().astimezone(NY).date().isoformat(),'FAILSAFE_CUTOFF_14:45')
+    cutoff = entry_end.strftime('%H:%M')
+    return request_strategy_exit(api, 'cutoff-' + now_et.date().isoformat(), 'FAILSAFE_CUTOFF_' + cutoff)
 
 
 @contextmanager
@@ -847,7 +868,7 @@ def cli():
         print('Market open:',bool(api.clock().get('is_open')),'| Bot armed:',armed())
         return
     if args.command=='chain':
-        if not market_window('ENTRY'):raise RuntimeError('Near-ATM chain selection requires 09:31–14:45 ET')
+        if not market_window('ENTRY'):raise RuntimeError('Near-ATM chain selection outside configured ET window')
         for d in ('BUY_CALL','BUY_PUT'):
             try:
                 x=select_contract(api,d)
@@ -878,7 +899,7 @@ def cli():
                 raise RuntimeError('Arm requires interactive terminal or authenticated AION LTM approval')
         print('ONLY Alpaca PAPER API can receive orders. Real Webull/Alpaca LIVE are not used.')
         print('Trading mode must remain SIMULATION. Max $2,500 TOTAL paper premium per entry, <=25 contracts.')
-        print('Exits: KAIROS V5 exit/reversal signals; 14:45 ET emergency failsafe.')
+        print('Exits: KAIROS V5 exit/reversal signals; emergency failsafe ET:', session_cutoffs()[0])
         print('The worker can submit PAPER orders automatically from FUTURE KAIROS V5 alerts.')
         word=input('Type ARM ALPACA PAPER to enable this automation: ').strip()
         if word!='ARM ALPACA PAPER':raise RuntimeError('Arm declined')
