@@ -6,6 +6,8 @@ Named after **Argus Panoptes**, the many-eyed guardian of Greek mythology, ARGUS
 
 > **Current status (November 2026):** Automated trading uses **Alpaca PAPER only**. SnapTrade/Webull live execution is a proposed future integration, **not deployed**.
 
+<img width="945" height="456" alt="image" src="https://github.com/user-attachments/assets/ebbd87ad-01f8-47af-9ebf-1d6b91ca7424" />
+
 ## Features
 
 | Feature | What it does |
