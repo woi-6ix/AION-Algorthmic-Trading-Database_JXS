@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="robots" content="noindex,nofollow,noarchive" />
   <meta name="theme-color" content="#0a101b" />
-  <title>AION | Live Trading Monitor</title>
+  <title>ARGUS Terminal | AION Quant Labs</title>
   <link rel="icon" type="image/png" href="/static/aion-logo.png" />
   <link rel="apple-touch-icon" href="/static/aion-logo.png" />
   <style>
@@ -55,7 +55,7 @@
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="brand"><img class="mark brand-logo" src="/static/aion-logo.png" alt="AION Quant Labs logo" width="48" height="48" /><div><div class="brandtitle">AION</div><div class="brandsub">Quant Labs</div></div></div>
+    <div class="brand"><img class="mark brand-logo" src="/static/aion-logo.png" alt="AION Quant Labs logo" width="48" height="48" /><div><div class="brandtitle">ARGUS</div><div class="brandsub">AION Quant Labs</div></div></div>
     <div class="navcap">Workspace</div>
     <div class="nav">
       <button data-section="overview" class="active"><span class="navsvg">◫</span> Overview</button>
@@ -67,11 +67,11 @@
       <button data-section="backtests" class="research-nav"><span class="navsvg">▤</span> Backtesting</button>
       <button data-section="system"><span class="navsvg">⚙</span> System Health</button>
     </div>
-    <div class="sidebar-foot"><div class="secure">● PRIVATE MONITOR + RESEARCH</div><div class="tiny" style="margin-top:8px">Backtests can be run and imported here. No brokerage order controls or credentials are exposed.</div></div>
+    <div class="sidebar-foot"><div class="secure">● ARGUS · PRIVATE MONITOR + RESEARCH</div><div class="tiny" style="margin-top:8px">Backtests can be run and imported here. No brokerage order controls or credentials are exposed.</div></div>
   </aside>
   <main class="main">
-    <div class="mobiletop"><img class="mark brand-logo" src="/static/aion-logo.png" alt="AION Quant Labs logo" width="36" height="36" /><div class="brandtitle">AION <span style="font-size:11px;letter-spacing:1px;color:#87a0b3">QUANT LABS</span></div></div>
-    <div class="topline"><div><div class="eyebrow">Live Operations · SPY / KAIROS V5</div><h1>Trading Monitor</h1><p class="subtitle">Signals, execution records and system status in one view.</p></div><div class="righttop"><div id="clock" class="clock">--</div><span id="connection-pill" class="pill warn">Connecting</span><button class="refresh" id="refresh" title="Refresh">↻</button></div></div>
+    <div class="mobiletop"><img class="mark brand-logo" src="/static/aion-logo.png" alt="AION Quant Labs logo" width="36" height="36" /><div class="brandtitle">ARGUS <span style="font-size:11px;letter-spacing:1px;color:#87a0b3">AION QUANT LABS</span></div></div>
+    <div class="topline"><div><div class="eyebrow">AION Quant Labs · SPY / KAIROS V5</div><h1>ARGUS Terminal</h1><p class="subtitle">Live trading monitor · Signals, executions and system health in one view.</p></div><div class="righttop"><div id="clock" class="clock">--</div><span id="connection-pill" class="pill warn">Connecting</span><button class="refresh" id="refresh" title="Refresh">↻</button></div></div>
     <div class="notice"><span style="font-size:18px">ⓘ</span><span id="notice">Signals are not brokerage executions. No live order fills have been connected yet.</span></div>
     <div id="overview" class="section active">
       <div class="metrics">
@@ -183,7 +183,7 @@
       <p class="disclaimer">Research only. Core V5 port omits LC/ML/HMM entry gates and is not Pine-parity-verified. Stock-bar fills are not option fills; options quote replay requires genuine historical bid/ask quotes. No brokerage order submission is present.</p>
     </div>
     <div id="system" class="section"><div class="section-head"><div><h2>System diagnostics</h2><p>Read-only view of local AION services</p></div></div><div class="panel"><div class="panelbody state-grid"><div class="state-row"><span>Monitor service</span><strong class="good">ONLINE — PORT 8501</strong></div><div class="state-row"><span>KAIROS simulator</span><strong id="sys-aion">—</strong></div><div class="state-row"><span>Webhook gateway</span><strong>NOT DIRECTLY MONITORED (PORT 8002)</strong></div><div class="state-row"><span>Mode</span><strong id="sys-mode">—</strong></div><div class="state-row"><span>Trading hours enforcement</span><strong id="sys-session">—</strong></div><div class="state-row"><span>Broker submission</span><strong class="good">NOT AVAILABLE FROM DASHBOARD</strong></div><div class="state-row"><span>Updated</span><strong id="sys-last">—</strong></div><div class="state-row"><span>Errors</span><strong id="sys-errors">None</strong></div></div></div><p class="disclaimer">Security: expose only through a private, authenticated Tailscale network. Do not publish this monitor via your TradingView Cloudflare Quick Tunnel.</p></div>
-    <div class="details"><span>AION Quant Labs</span><span>KAIROS LC V5</span><span>Auto-refresh · 8 seconds</span><span>Read-only interface</span></div>
+    <div class="details"><span>ARGUS Terminal · AION Quant Labs</span><span>KAIROS LC V5</span><span>Auto-refresh · 8 seconds</span><span>Read-only interface</span></div>
   </main>
 </div>
 <nav class="mobilenav" aria-label="Navigation"><button data-section="overview" class="active"><b>◫</b>Overview</button><button data-section="signals"><b>⌁</b>Signals</button><button data-section="executions"><b>⇄</b>Fills</button><button data-section="screener"><b>⌕</b>Scan</button><button data-section="sentiment"><b>☷</b>News</button><button data-section="regimes"><b>◈</b>Regime</button><button data-section="backtests"><b>▤</b>Backtests</button><button data-section="system"><b>⚙</b>System</button></nav>
