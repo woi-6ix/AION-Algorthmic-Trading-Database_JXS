@@ -31,7 +31,7 @@ data = {
     "timeframe": "3",
     "order_id": "ARGUS-TEST-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ"),
     "order_action": "buy",
-    "order_message": "KAIROS LC V5 LONG | BTC AUTHENTICATED DRY RUN", 
+    "order_message": "KAIROS LC V5 LONG | BTC AUTHENTICATED DRY RUN",
     "timenow": datetime.now(timezone.utc).isoformat(),
 }
 req = urllib.request.Request(
