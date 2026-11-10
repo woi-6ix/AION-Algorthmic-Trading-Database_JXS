@@ -1,4 +1,4 @@
-# ARGUS Terminal — AION Quant Labs Live Trading Monitor
+# ARGUS Terminal — AION's Live Trading Monitor
 
 **ARGUS (AION LTM)** is the private, Windows-hosted monitoring and control terminal for **AION Quant Labs**. It observes 3-minute SPY strategy alerts from [**KAIROS — Lorentzian ML Swing Engine**](https://github.com/woi-6ix/KAIROS-Lorentzian-ML-Swing-Engine_JXS), signal ingestion, execution state, broker-confirmed fills, system health, and research/backtesting. The implemented automated order route is **Alpaca PAPER only**, with a **$2,500 maximum option-premium debit per entry**; no live brokerage order path is deployed.
 
