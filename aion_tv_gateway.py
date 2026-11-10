@@ -84,6 +84,38 @@ def get_emitted_at(raw: str) -> datetime:
     return d
 
 
+@app.post('/tv-webhook-test')
+async def tradingview_dryrun(request: Request):
+    """Authenticated local test path: validates a TV fill; NEVER forwards or logs it."""
+    if request.headers.get('content-type', '').split(';')[0].strip().lower() != 'application/json':
+        raise HTTPException(415, 'JSON required')
+    raw = await request.body()
+    if len(raw) > MAX_BODY_BYTES:
+        raise HTTPException(413, 'Payload too large')
+    try:
+        obj = TVOrderFill.model_validate_json(raw)
+    except Exception:
+        raise HTTPException(422, 'Invalid TradingView order-fill JSON') from None
+    if not hmac.compare_digest(obj.webhook_secret, WEBHOOK_SECRET):
+        raise HTTPException(403, 'Forbidden')
+    if obj.strategy != 'KAIROS_V5' or obj.ticker.strip().upper() not in ('SPY', 'AMEX:SPY'):
+        raise HTTPException(422, 'Only KAIROS_V5 SPY is accepted')
+    if obj.timeframe.strip().lower() not in ('3', '3m'):
+        raise HTTPException(422, 'Only 3-minute strategy fills are accepted')
+    if obj.order_action.lower() not in ('buy', 'sell'):
+        raise HTTPException(422, 'Unknown underlying strategy order action')
+    get_emitted_at(obj.timenow)
+    signal = translate_message(obj.order_message)
+    return {
+        'result': 'TEST_VALIDATED_NO_FORWARD',
+        'translated_signal': signal,
+        'intent_state': 'UNCHANGED',
+        'mode': 'SIMULATION',
+        'broker_order_sent': False,
+        'test_only': True,
+    }
+
+
 @app.post('/tv-webhook')
 async def tradingview_webhook(request: Request):
     if request.headers.get('content-type', '').split(';')[0].strip().lower() != 'application/json':
