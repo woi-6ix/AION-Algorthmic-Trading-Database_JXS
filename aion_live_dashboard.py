@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parent
 # only calls the local, read-only AION /health, /status, /events endpoints.
 SOURCE = "http://127.0.0.1:8001"
 
-app = FastAPI(title="AION Live Monitor — Read Only", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="ARGUS Terminal | AION Quant Labs — Read Only", docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(research_router)
 
 # AION original Quant Terminal v0.2 research engine (same process, /lab prefix).
