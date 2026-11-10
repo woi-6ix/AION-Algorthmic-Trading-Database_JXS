@@ -27,11 +27,11 @@ url = "http://127.0.0.1:8002/tv-webhook-test"  # NEVER use /tv-webhook here
 data = {
     "webhook_secret": secret,
     "strategy": "KAIROS_V5",
-    "ticker": "SPY",
+    "ticker": "BITSTAMP:BTCUSD",
     "timeframe": "3",
     "order_id": "ARGUS-TEST-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ"),
     "order_action": "buy",
-    "order_message": "KAIROS LC V5 LONG | AUTHENTICATED DRY RUN",
+    "order_message": "KAIROS LC V5 LONG | BTC AUTHENTICATED DRY RUN", 
     "timenow": datetime.now(timezone.utc).isoformat(),
 }
 req = urllib.request.Request(
@@ -54,9 +54,10 @@ if not (result.get("result") == "TEST_VALIDATED_NO_FORWARD"
         and result.get("translated_signal") == "BUY_CALL"
         and result.get("intent_state") == "UNCHANGED"
         and result.get("test_only") is True
-        and result.get("broker_order_sent") is False):
+        and result.get("broker_order_sent") is False
+        and result.get("validated_ticker") == "BITSTAMP:BTCUSD"):
     raise SystemExit("Unexpected response; do not assume the test was safe: " + repr(result))
 
-print("PASS: TradingView-shaped SPY 3-minute KAIROS V5 LONG authenticated and translated to BUY_CALL")
+print("PASS: TradingView-shaped BITSTAMP:BTCUSD 3-minute KAIROS V5 LONG authenticated and translated for TEST ONLY")
 print("PASS: no signal forwarded, no queued event, no PAPER/live order sent")
 print("RESULT:", json.dumps({k: v for k, v in result.items() if k != "webhook_secret"}, sort_keys=True))
