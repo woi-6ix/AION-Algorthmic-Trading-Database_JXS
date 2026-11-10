@@ -86,7 +86,7 @@ Get-ScheduledTask | Where-Object TaskName -Like 'AION-*' |
 
 **Temporary session override — November 10, 2026 only:** Alpaca PAPER new entries may be accepted until **15:30 ET**; the 0DTE emergency exit attempt moves to **15:30 ET** (with exit-order handling to 15:50 ET). The normal **14:45 ET** emergency cutoff returns automatically on **November 11**. This change needs the updated worker and receiver deployed/restarted on the Windows host; it does not change any TradingView Pine session inputs, clear a kill switch, or guarantee fills.
 
-**Safe fake TradingView test:** with the updated gateway running, run `.\.venv\Scripts\python.exe .\test_tv_dryrun.py`. It posts a fresh KAIROS V5 LONG-shaped alert to **`127.0.0.1:8002/tv-webhook-test`**, which authenticates/translates but **never forwards a signal to SQLite or Alpaca**. The real `/tv-webhook` remains unchanged.
+**Safe BTC TradingView test:** with the updated gateway running, run `.\.venv\Scripts\python.exe .\test_tv_dryrun.py`. It posts a fresh synthetic **BITSTAMP:BTCUSD** KAIROS V5 LONG-shaped alert to **`127.0.0.1:8002/tv-webhook-test`**, which authenticates/translates but **never forwards a signal to SQLite or Alpaca**. BTC is accepted **only** on the test endpoint; the real `/tv-webhook` remains SPY-only. This tests payload authentication and mapping, not real TradingView delivery or broker execution.
 
 **Healthy execution requires more than “armed”:** confirm a running worker PID, a **recent heartbeat**, no kill switch, a bound PAPER account and reconciled orders/positions. A connection failure can halt the worker; **Wi-Fi recovery does not automatically clear the kill switch or rearm trading**. Review broker state before manually rearming. Do not replay stale alerts.
 
