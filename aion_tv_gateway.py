@@ -98,8 +98,11 @@ async def tradingview_dryrun(request: Request):
         raise HTTPException(422, 'Invalid TradingView order-fill JSON') from None
     if not hmac.compare_digest(obj.webhook_secret, WEBHOOK_SECRET):
         raise HTTPException(403, 'Forbidden')
-    if obj.strategy != 'KAIROS_V5' or obj.ticker.strip().upper() not in ('SPY', 'AMEX:SPY'):
-        raise HTTPException(422, 'Only KAIROS_V5 SPY is accepted')
+    # This dry-run route does not forward or persist anything. Accept a BTC
+    # test fixture here ONLY; the real /tv-webhook remains strictly SPY-only.
+    test_tickers = ('SPY', 'AMEX:SPY', 'BTCUSD', 'BITSTAMP:BTCUSD')
+    if obj.strategy != 'KAIROS_V5' or obj.ticker.strip().upper() not in test_tickers:
+        raise HTTPException(422, 'Unsupported KAIROS V5 dry-run ticker')
     if obj.timeframe.strip().lower() not in ('3', '3m'):
         raise HTTPException(422, 'Only 3-minute strategy fills are accepted')
     if obj.order_action.lower() not in ('buy', 'sell'):
@@ -113,6 +116,7 @@ async def tradingview_dryrun(request: Request):
         'mode': 'SIMULATION',
         'broker_order_sent': False,
         'test_only': True,
+        'validated_ticker': obj.ticker.strip().upper(),
     }
 
 
