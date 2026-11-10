@@ -1,6 +1,6 @@
 # ARGUS Terminal — AION's Live Trading Monitor
 
-**ARGUS (AION LTM)** is the private, Windows-hosted monitoring and control terminal for **AION Quant Labs**. It observes 3-minute SPY strategy alerts from [**KAIROS — Lorentzian ML Swing Engine**](https://github.com/woi-6ix/KAIROS-Lorentzian-ML-Swing-Engine_JXS), signal ingestion, execution state, broker-confirmed fills, system health, and research/backtesting. The implemented automated order route is **Alpaca PAPER only**, with a **$2,500 maximum option-premium debit per entry**; no live brokerage order path is deployed yet.
+**ARGUS (AION LTM)** is the private, Windows-hosted monitoring and control terminal for **AION Quant Labs**. It observes 3-minute SPY strategy alerts from [**KAIROS — Lorentzian ML Swing Engine**](https://github.com/woi-6ix/KAIROS-Lorentzian-ML-Swing-Engine_JXS), signal ingestion, execution state, broker-confirmed fills, system health, protected PAPER trade controls, historical backtesting, stock screening, headline sentiment and market-regime research. The implemented automated order route is **Alpaca PAPER only**, with a **$2,500 maximum option-premium debit per entry**; no live brokerage order path is deployed yet.
 
 > **Deployment snapshot — November 10, 2026:** ARGUS is operating locally on the owner's Windows machine. The dashboard and other AION services have been launched as background scheduled tasks; ngrok has been migrated to an automatically starting Windows service. PAPER entry/exit orders have been tested previously, but automated operation remains experimental and requires monitoring. A temporary Alpaca account-API connection failure overnight on November 10 stopped the PAPER worker and activated its kill switch; it was manually reconciled and rearmed later. Do **not** infer worker health, current arming, or live orders from this dated README: inspect the local heartbeat and Alpaca broker account directly.
 
@@ -30,7 +30,77 @@
 | ngrok v3 Windows service | Automatic Windows service → `127.0.0.1:8002` | Public HTTPS ingress for authenticated TradingView POSTs **only** |
 | Tailscale Serve | Tailnet-only HTTPS → `127.0.0.1:8501` | Private VPN-like access to ARGUS from approved Tailnet devices |
 | `aion_execution_journal.py` | local SQLite | Only broker-confirmed option fills, P&L journal |
-| `aion_research.py` | internal research endpoints | Screener, news sentiment, research-only regimes |
+| `aion_research.py` | `/api/research/` routes | Daily-close stock/ETF screener, Google News RSS + VADER headline sentiment, optional HMM/GARCH and STORM-style regime research |
+
+## ARGUS Terminal features
+
+ARGUS brings together algorithmic signal monitoring, a **password-style locked Alpaca PAPER control panel**, market research, backtesting and system diagnostics in one private web interface. The components below are implemented in the current source unless explicitly described as a separate project or future integration.
+
+| Feature | What the operator can do | Data / execution boundary |
+| --- | --- | --- |
+| **Password-style locked Alpaca PAPER controls** | Unlock a floating control panel; inspect broker positions and worker health; manually pause/resume PAPER automation; request position close or account-wide close/cancel | Authenticated PAPER-only actions, not Webull or Alpaca LIVE |
+| **KAIROS signal logging and execution tracking** | Inspect recent TradingView alerts, entry/exit/reversal intent, execution mode, confirmed fills and P&L journal | Signal acknowledgment is **not** an order or fill |
+| **Integrated backtesting lab** | Download/cache/import OHLCV, run KAIROS core-port stock-bar studies, import Strategy Tester trades/Pine signals, and replay 0DTE options against historical quotes | Backtests are research only; not Pine-parity or guaranteed execution |
+| **Financial stock & ETF screener** | Edit a watchlist, scan technical metrics, inspect directional trend labels, and chart historical closing prices | Yahoo/yfinance **daily historical** data, not live licensed market-wide screening |
+| **News and sentiment analyzer** | Retrieve ticker-related news headlines, view per-headline sentiment and an aggregate sentiment score | **VADER lexical analysis** of Google News RSS headlines, not FinBERT |
+| **Market Regime Lab** | Explore HMM regime labels, GARCH volatility estimates and STORM-style signals | Optional research fits and a heuristic proxy, not the original production STORM |
+| **System health and audit views** | Review local service status, KAIROS receiver state, worker heartbeat/supervisor, armed/kill-switch status and broker-confirmed activity | Task status alone cannot prove an active worker or filled trades |
+
+### Locked Alpaca PAPER control panel
+
+The floating **ALPACA PAPER CONTROLS** interface is integrated into ARGUS through \`aion_ltm_with_controls.py\`, \`aion_alpaca_controls.js\` and \`aion_alpaca_control.py\`.
+
+- A **masked password-style input** lets the operator enter a separate, long random **\`AION_CONTROL_TOKEN\`** and choose **Unlock**. The backend validates the token sent in the \`X-Aion-Control-Token\` header before disclosing PAPER positions or allowing control actions. This is a **shared control token, not a separate username/password login system**; ARGUS itself must remain restricted to the private Tailscale Tailnet. The token lives outside Git and is held in browser memory rather than embedded in JavaScript or stored permanently in the browser.
+- After unlocking, the panel shows **PAPER bot state, recent/stale heartbeat, Windows supervisor mode, broker connectivity, open positions, market values and unrealized P&L**. The interface distinguishes **armed permission** from a **confirmed running worker**.
+- **Pause automation** disarms; **Resume automation** re-arms only after the worker's existing account/order safety checks and lets the supervisor launch the worker. Actions require deliberate confirmation. **Pausing does not automatically flatten positions and may stop automatic exits.**
+- The operator can request **Close** for an individual PAPER position, or **CLOSE ALL PAPER POSITIONS + CANCEL ORDERS** for the entire PAPER account. Manual closes disarm the worker first. Submission is **not proof of a fill**; verify at Alpaca. An account-wide close affects **all** holdings in that PAPER account, not just KAIROS.
+
+Access to the site uses **Tailscale Serve over an authorized Tailnet**; the control token adds an application-level gate for sensitive PAPER operations. See [PAPER controls](README_AION_LTM_PAPER_CONTROLS.md) and [persistent local token](README_AION_LTM_PERSISTENT_TOKEN.md). Never publish the token or the dashboard through the public TradingView webhook.
+
+### TradingView signal logging, broker fills and monitoring
+
+[**KAIROS**](https://github.com/woi-6ix/KAIROS-Lorentzian-ML-Swing-Engine_JXS) emits 3-minute SPY TradingView strategy alerts. The authenticated port-8002 gateway validates supported V5 messages and forwards them to the local port-8001 receiver, which durably writes **timestamped SQLite events** such as \`SIGNAL_LOGGED\`, \`EXIT_INTENT_LOGGED\`, \`REVERSAL_INTENT_LOGGED\`, duplicates and ignored signals. ARGUS presents a recent activity chart, an alert history and execution status. The supervised worker separately records **PAPER order decisions** (for example a submitted entry, stale skip, rejected condition or halted error). Its execution journal records **broker-confirmed fills and derived P&L**, not hypothetical fills from TradingView.
+
+A TradingView \`HTTP 200\` confirms only the ingress/receiver handoff. The operator must check the worker PID, **fresh heartbeat**, kill switch, local decision record, Alpaca orders and actual fills before concluding a trade occurred. This distinction is central to ARGUS's "all-seeing" name.
+
+### Financial stock and ETF screener
+
+The **Stock Screener** is an editable **up-to-12-symbol** watchlist, with common defaults such as SPY, QQQ, IWM, DIA, AAPL, MSFT and NVDA. ARGUS retrieves approximately **three months of daily Yahoo Finance/yfinance history** for the selected stocks/ETFs, then computes:
+
+- Last closing price and daily percentage change, **14-period RSI**, **20/50-period EMAs**, relative volume versus a recent 20-session baseline, and **20-day annualized realized volatility**.
+- A simple **BULLISH**, **BEARISH** or **MIXED** trend designation based on close-price alignment with its 20/50 EMAs.
+- A selectable daily-close price chart for visual review; returned bars and the 10-minute research cache reduce repeat fetching.
+
+This is a **user-specified historical watchlist screen**, not a full-universe stock scanner, real-time broker quote service, licensed commercial market-data feed or direct trade signal.
+
+### News sentiment: current ARGUS VADER analyzer and linked IRIS FinBERT project
+
+**Currently in ARGUS:** Enter a research ticker under **News & Sentiment**. The terminal searches **Google News RSS** for recent ticker-related finance headlines, retrieves up to 15 relevant feed entries, and applies the **VADER** lexical sentiment analyzer to each **headline only**. Each result receives a compound sentiment score (approximately **−1 to +1**), a **Positive / Neutral / Negative** label, article metadata/link, and an aggregate average sentiment measure. ARGUS caches headline research for roughly 10 minutes. This lightweight indicator is keyword-dependent, can miss financial context, does not read full article bodies, and **is not FinBERT**.
+
+**Related standalone project — [IRIS FinBERT Stock Financial Sentiment Console](https://github.com/woi-6ix/IRIS_FinBERT_Console_JXS):** IRIS is the separate Streamlit NLP and forecasting application developed by the same author. Its published implementation describes the following pipeline:
+
+1. The user selects a stock **ticker and keyword**; IRIS retrieves **Yahoo Finance price history** plus related **Yahoo Finance RSS news** and filters matched article titles/summaries by keyword.
+2. Hugging Face's **[FinBERT (\`ProsusAI/finbert\`)](https://huggingface.co/ProsusAI/finbert)** classifies financial news text as **positive, neutral or negative**, and converts classification results to signed sentiment scores. News dates are aligned to the current or next trading day.
+3. IRIS combines those sentiment values with historical **daily returns and moving-average features**. **XGBoost regression** uses lagged return and sentiment features to produce research-only return forecasts across a user-selected business-day horizon.
+4. The console visualizes **sentiment distributions, price/return moving averages, forecast charts, MAE/RMSE evaluation metrics and feature importance** for interpretation.
+
+**Integration status:** This FinBERT + XGBoost pipeline belongs to **IRIS** and is **not currently wired into ARGUS's \`aion_research.py\` sentiment endpoint**. Connecting IRIS/FinBERT to ARGUS is a possible future upgrade; it must not be presented as already deployed or as a validated automated trading signal. See the [IRIS repository and methodology](https://github.com/woi-6ix/IRIS_FinBERT_Console_JXS).
+
+### Integrated KAIROS backtesting and 0DTE quote replay
+
+The **Backtesting** tab embeds the original Quant Terminal research engine under \`/lab/\` and provides:
+
+- **Stock-bar history:** select ticker, timeframe, historical window and a supported data source; download/cache OHLCV from Yahoo/yfinance where available, use a separately configured market-data provider, import **OHLCV CSV**, or ingest a **separately authorized TradingView OHLCV sync**. A connected ChatGPT TradingView account **does not automatically grant** the local website historical-data access.
+- **KAIROS core-port stock strategy:** run an executable, research-only **KAIROS V5 CORE PORT** approximation on stock bars, inspect trade tables, equity results, diagnostics and the saved backtest library. **It is not an exact Pine strategy replica**: LC/ML, full environment/HMM gates and kernel parity are not verified. Imported TradingView Strategy Tester trades are needed for faithful records of the original Pine strategy.
+- **Signal and trade imports:** import Pine entry/exit timestamps as CSV and **TradingView Strategy Tester CSV**; organize historical runs and inspect completed trades and calculated performance metrics.
+- **Historical 0DTE options replay:** use core-port signals or imported signal timestamps, choose supported underlyings (SPY/QQQ/IWM), and replay option entry/exit against **actual timestamped historical bid/ask quote records**, with configurable quantities, fees, slippage, quote staleness and exit mode. Missing option quotes **skip trades** rather than fabricating results.
+
+Backtesting does **not** drive live trading or place Alpaca PAPER orders. Historical quote availability depends on the provider's data-entitlement and source coverage. Stock-bar backtests cannot be interpreted as historical 0DTE options profit.
+
+### Regime and volatility research
+
+The **Market Regime Lab** uses daily historical returns to fit a **three-state Gaussian HMM** (when \`hmmlearn\` is installed) and an optional **GARCH(1,1)** next-day conditional volatility estimate (when \`arch\` is installed). It also presents a **STORM-style heuristic proxy** built from 20-day momentum and realized volatility. The proxy is **not the original STORM model** and these research metrics are not wired into the PAPER worker's execution gates.
+
 
 ## Access model — Tailnet-restricted ARGUS, separate public webhook
 
