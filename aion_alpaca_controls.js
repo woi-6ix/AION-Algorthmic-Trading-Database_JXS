@@ -36,7 +36,7 @@
     <button id="aion-ctl-toggle" type="button" aria-expanded="false">◉ &nbsp;ALPACA PAPER CONTROLS</button>
     <section id="aion-ctl-panel" hidden aria-label="Alpaca Paper Trade Controls">
       <h3>Alpaca • Manual Override <span class="pill">PAPER ONLY</span></h3>
-      <p class="sub">AION LTM · Position management and algorithm arming</p>
+      <p class="sub">ARGUS Terminal · AION PAPER positions and algorithm controls</p>
       <div class="line"><input id="aion-ctl-token" type="password" autocomplete="off" placeholder="Enter your AION control token" aria-label="Control token"><button class="btn" id="aion-ctl-auth" type="button">Unlock</button></div>
       <div class="line"><span>Bot</span><span class="pill" id="aion-ctl-bot">Locked</span></div>
       <div class="line"><span>Worker heartbeat</span><span id="aion-ctl-heartbeat" class="small">—</span></div>
