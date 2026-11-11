@@ -94,6 +94,10 @@ Get-ScheduledTask | Where-Object TaskName -Like 'AION-*' |
 
 Research data is indicative: the stock screener uses Yahoo/yfinance history; ARGUS sentiment is headline-only; the KAIROS backtest core is **not an exact Pine replica**; and 0DTE backtests need genuine historical option bid/ask records. **No verified daily loss cap is implemented.**
 
+## Read-only ChatGPT integration
+
+An optional [**ARGUS read-only MCP connector**](README_ARGUS_READONLY_MCP.md) provides private access to system health, signal logs, worker decisions, PAPER journals, backtests and research through an **OpenAI Secure MCP Tunnel**, when the ChatGPT account/workspace supports custom MCP connections. It cannot arm the bot, submit/close trades or access secrets. **Connection and Windows setup are required; this code is not deployed by a GitHub commit.**
+
 ## Documentation
 
 - [**KAIROS strategy repository**](https://github.com/woi-6ix/KAIROS-Lorentzian-ML-Swing-Engine_JXS)
