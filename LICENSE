@@ -1,21 +1,25 @@
-MIT License
+Copyright (c) 2026 Sathwik Juttada. All rights reserved.
 
-Copyright (c) 2026 Sathwik Juttada
+PROPRIETARY SOURCE — PUBLICLY VIEWABLE, NOT OPEN SOURCE
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The copyright holder makes this repository publicly accessible for inspection
+and reference only. No permission is granted to copy, reproduce, use, modify,
+adapt, publish, distribute, sublicense, sell, or create derivative works from
+the original source code, documentation, or other copyrightable materials owned
+by the copyright holder without prior written permission, except to the extent
+expressly permitted by applicable law or GitHub's Terms of Service.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+To request a license or other permission, contact the repository owner through
+GitHub.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPORTANT EXCEPTIONS AND PRIOR RIGHTS
+- Earlier versions released under the MIT License remain available under the
+  permissions granted for those versions; this notice does not revoke them.
+- Third-party code, dependencies, and materials remain governed by their
+  respective licenses. This notice does not restrict rights granted by those
+  licenses (including any applicable open-source source-file obligations).
+- GitHub users retain the public-repository viewing and forking rights provided
+  by GitHub's Terms of Service.
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, TO THE
+MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW.
