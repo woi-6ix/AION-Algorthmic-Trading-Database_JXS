@@ -2,6 +2,7 @@
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
@@ -18,9 +19,11 @@ class TestArgusReadOnly(unittest.TestCase):
         self.addCleanup(setattr, adapter, "ROOT", self.previous)
 
     def make_db(self, name, statements):
-        with sqlite3.connect(self.root / name) as db:
+        # sqlite3.Connection context manager commits but does NOT close on Windows.
+        with closing(sqlite3.connect(self.root / name)) as db:
             for sql, params in statements:
                 db.execute(sql, params)
+            db.commit()
 
     def test_missing_database_is_not_created(self):
         before = set(self.root.iterdir())
