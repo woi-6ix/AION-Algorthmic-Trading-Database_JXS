@@ -49,11 +49,11 @@ def age_seconds(timestamp):
 
 def read_rows(filename, sql, params=(), limit=MAX_ROWS):
     """Only constant file names and constant SELECT queries from this module."""
+    if not sql.lstrip().upper().startswith("SELECT ") or ";" in sql:
+        raise ValueError("Read-only SELECT queries only")
     path = ROOT / filename
     if not path.is_file():
         return {"available": False, "rows": [], "reason": "Local database is absent"}
-    if not sql.lstrip().upper().startswith("SELECT ") or ";" in sql:
-        raise ValueError("Read-only SELECT queries only")
     try:
         uri = path.resolve().as_uri() + "?mode=ro"
         with closing(sqlite3.connect(uri, uri=True, timeout=2)) as db:
