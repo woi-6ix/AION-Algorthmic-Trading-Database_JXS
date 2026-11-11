@@ -56,3 +56,7 @@ jobs:
         run: python -m unittest discover -s tests -p test_argus_readonly_data.py -v
       - name: Python syntax validation (no MCP/network needed)
         run: python -m py_compile argus_readonly_data.py argus_readonly_mcp.py
+      - name: Install isolated MCP runtime for import smoke test
+        run: python -m pip install "mcp>=2,<3"
+      - name: Verify MCP server registers without starting or trading
+        run: python -c "import argus_readonly_mcp; print('ARGUS MCP read-only import OK')"
