@@ -108,4 +108,4 @@ An optional [**ARGUS read-only MCP connector**](README_ARGUS_READONLY_MCP.md) pr
 
 ## License
 
-[MIT License](LICENSE), except where separate third-party terms apply.
+**All Rights Reserved — publicly viewable, not open source.** See [LICENSE](LICENSE). No permission to reuse, modify, distribute, or commercialize the author's original code is granted without written authorization, subject to GitHub's Terms of Service and applicable law. Earlier MIT-licensed versions retain their prior license rights; third-party licenses remain in effect.
